@@ -45,11 +45,12 @@ RUN echo "Packages" && \
     echo "Create build directory" && \
     mkdir -p /local/build
 
-# Set ENV vars for Emscripten SDK
+# Set ENV vars for Emscripten SDK and set global compiler flags
 ENV PATH=/local/src/emsdk:/local/src/emsdk/upstream/emscripten:/usr/local/bin:/usr/bin \
 	EMSDK=/local/src/emsdk \
 	EMSDK_NODE=/local/src/emsdk/node/20.18.0_64bit/bin/node \
-	EM_CONFIG=/local/src/emsdk/.emscripten
+	EM_CONFIG=/local/src/emsdk/.emscripten \
+    CFLAGS="-O3 -g0" CXXFLAGS="-O3 -g0" LDFLAGS="-O3 -g0"
 
 RUN echo "Compile oniguruma (mbstring regex library)" && \
     git clone https://github.com/kkos/oniguruma --branch v$ONIGURUMA_VERSION --single-branch --depth 1 && \
