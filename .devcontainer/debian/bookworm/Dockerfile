@@ -37,8 +37,8 @@ RUN echo "Packages" && \
 	./emsdk install latest && \
 	./emsdk activate latest && \
     echo "Download PHP and prepare build system" && \
-	git clone https://github.com/php/php-src.git php-src --branch PHP-$PHP_VERSION --single-branch --depth 1 && \
-	cd php-src && \
+	git clone https://github.com/php/php-src.git /local/src/php-src/ --branch PHP-$PHP_VERSION --single-branch --depth 1 && \
+	cd /local/src/php-src/ && \
 	./buildconf --force && \
     echo "Create install directory" && \
     mkdir -p /local/install && \
