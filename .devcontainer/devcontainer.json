@@ -1,0 +1,30 @@
+{
+	"name": "php-wasm-buildbox",
+	"build": {
+		// The repository contains one image:
+		// - "./debian/bookworm/Dockerfile" (default)
+		"dockerfile": "./debian/bookworm/Dockerfile",
+		// The the context to the repository root,
+        // so that the Dockerfile can copy files from the /src folder
+		"context": ".."
+	},
+    "capAdd": [
+        "SYS_PTRACE"
+      ],
+      "securityOpt": [
+        "seccomp=unconfined"
+      ],
+      // config settings you would have in ".vscode/settings.json"
+      "customizations": {
+        "vscode": {
+          // Add the IDs of extensions you want installed when the container is created.
+          "extensions": [
+            "EditorConfig.EditorConfig"
+          ]
+        },
+        "settings": {
+            "extensions.ignoreRecommendations": true
+        }
+    },
+    "remoteUser": "root"
+}

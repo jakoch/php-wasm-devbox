@@ -1,0 +1,105 @@
+name: Build Docker Image
+
+on:
+  # You can manually run this workflow.
+  workflow_dispatch:
+  # This workflow will run on every push to the main branch.
+  push:
+    branches:
+      - main
+
+jobs:
+
+# ---------------------------------------------------------------------------------------
+
+  build:
+
+# ---------------------------------------------------------------------------------------
+
+    name: "Build Docker Image"
+    # https://github.com/actions/runner-images
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - { debian_codename: "bookworm", debian_version: "12", php_version: "8.1.4" }
+
+    env:
+      GHCR_IMAGE: ghcr.io/${{ github.repository }}
+
+    steps:
+      - name: ✂️ Free Disk Space
+        uses: jlumbroso/free-disk-space@v1.3.1 # https://github.com/jlumbroso/free-disk-space
+        with:
+          tool-cache: true
+          docker-images: false
+
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v4 # https://github.com/actions/checkout
+
+      - name: 🔍 Run hadolint
+        uses: hadolint/hadolint-action@v3.1.0 # https://github.com/hadolint/hadolint-action
+        with:
+          dockerfile: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
+          no-fail: true
+
+      - name: 🔒 Login to Github Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3 # https://github.com/docker/login-action
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔽 Setup QEMU
+        uses: docker/setup-qemu-action@v3 # https://github.com/docker/setup-qemu-action
+        with:
+          platforms: ${{ matrix.config.platform }}
+
+      - name: 🔽 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/docker/setup-buildx-action
+
+      - name: 🔑 Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🙏 Build and push Docker image
+        uses: docker/build-push-action@v6 # https://github.com/docker/build-push-action
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/php-wasm-builder:latest
+
+      - name: ❔List Docker Images
+        run: |
+          docker images --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}\t{{.Size}}"
+          docker images --digests
+
+      - name: 📦 🚀 Push all images and all tags
+        run: |
+          docker push --all-tags ${{ env.GHCR_IMAGE }}
+
+      - name: Copy build artifacts from Docker image
+        run: |
+          container_id=$(docker create ${{ secrets.DOCKER_USERNAME }}/php-wasm-builder:latest)
+          docker cp $container_id:/php-wasm-build ./php-wasm
+          docker rm $container_id
+
+      - name: 🏷️ Versionize Artifact
+        run: |
+          echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ matrix.config.php_version }}" >> ./build/.env
+          echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ matrix.config.php_version }}.zip" >> ./build/.env
+
+      - name: 📦 Package Artifact
+        run: |
+          7z a -tzip -mx9 "${{ env.PHP_WASM_ARTIFACT_ZIPFILE }}" "/php-wasm"
+
+      - name: 📦 🚀 Upload Artifact
+        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.PHP_WASM_ARTIFACT_NAME }}
+          path: ${{ env.PHP_WASM_ARTIFACT_ZIPFILE}}
