@@ -175,9 +175,9 @@ RUN echo "Create PHP-WASM (ES6 JavaScript module)" && \
 # Deploy Stage
 #
 # The deploy stage is used to create a minimal image for deployment.
-# The folder /local/build/php-wasm/ contains the compiled PHP-WASM module.
+# The folder /php-wasm contains the compiled PHP-WASM module.
 #
 
 FROM debian:bookworm-slim AS deploy-stage
 
-COPY --from=build-stage /local/build/php-wasm /php-wasm
+COPY --from=build-stage /php-wasm /php-wasm
