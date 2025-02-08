@@ -112,11 +112,11 @@ jobs:
           docker images --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}\t{{.Size}}"
           docker images --digests
 
-      - name: 📦 🚀 Push all images and all tags
+      - name: 🐳 🚀 Push all images and all tags
         run: |
           docker push --all-tags ${{ env.GHCR_IMAGE }}
 
-      - name: Copy build artifacts from Docker image
+      - name: 🔄 Copy build artifacts from Docker image
         run: |
           container_id=$(docker create ${{ secrets.DOCKER_USERNAME }}/php-wasm-builder:latest)
           docker cp $container_id:/php-wasm-build ./php-wasm
