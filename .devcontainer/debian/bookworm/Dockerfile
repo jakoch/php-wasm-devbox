@@ -73,7 +73,7 @@ ENV ONIG_LIBS="-L/local/install" \
 
 # https://www.php.net/manual/en/configure.about.php
 RUN echo "Configure PHP" && \
-	cd php-src && \
+    cd /local/src/php-src/ && \
 	emconfigure ./configure \
     --enable-embed=static \
 	--disable-all \
