@@ -147,8 +147,8 @@ RUN echo "Configure PHP" && \
 # https://emscripten.org/docs/tools_reference/settings_reference.html
 #
 RUN echo "Create PHP-WASM (ES6 JavaScript module)" && \
-    mkdir -p /php-wasm-bridge && \
- 	emcc -o /php-wasm-bridge/php-$PHP_VERSION-web.mjs \
+    mkdir -p /php-wasm && \
+ 	emcc -o /php-wasm/php-$PHP_VERSION-web.mjs \
  	-O3 \
     -g0 \
     -flto=full \
@@ -175,9 +175,9 @@ RUN echo "Create PHP-WASM (ES6 JavaScript module)" && \
 # Deploy Stage
 #
 # The deploy stage is used to create a minimal image for deployment.
-# The folder /build/ contains the compiled PHP-WASM module.
+# The folder /local/build/php-wasm/ contains the compiled PHP-WASM module.
 #
 
-#FROM debian:bookworm-slim AS deploy-stage
+FROM debian:bookworm-slim AS deploy-stage
 
-#COPY --from=build-stage /build/ /build/
+COPY --from=build-stage /local/build/php-wasm /php-wasm
