@@ -45,8 +45,8 @@ jobs:
       - name: 🤘 Checkout Code
         uses: actions/checkout@v4 # https://github.com/actions/checkout
 
-      - name: Set TERM for shtool
-        run: echo "TERM=xterm-256color" >> $GITHUB_ENV
+      - name: 🛠️ Set TERM for shtool
+        run: echo "TERM=xterm-256color" >> "$GITHUB_ENV"
 
       - name: 🔍 Run hadolint
         uses: hadolint/hadolint-action@v3.1.0 # https://github.com/hadolint/hadolint-action
@@ -140,13 +140,13 @@ jobs:
       - name: 🔄 Copy build artifacts from the "deploy-stage" Docker image
         run: |
           container_id=$(docker create ${{ env.GHCR_IMAGE }}:${{ matrix.config.debian_codename }}-deploy-latest)
-          docker cp $container_id:/php-wasm-build ./php-wasm
+          docker cp $container_id:/php-wasm/ ./php-wasm
           docker rm $container_id
 
       - name: 🏷️ Versionize Artifact
         run: |
-          echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ matrix.config.php_version }}" >> ./build/.env
-          echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ matrix.config.php_version }}.zip" >> ./build/.env
+          echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ matrix.config.php_version }}" >> "$GITHUB_ENV"
+          echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ matrix.config.php_version }}.zip" >> "$GITHUB_ENV"
 
       - name: 📦 Package Artifact
         run: |
