@@ -60,7 +60,7 @@ RUN echo "Compile oniguruma (mbstring regex library)" && \
     git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2 --branch v$LIBXML_VERSION  --single-branch --depth 1 && \
 	cd libxml2 && \
 	emconfigure ./autogen.sh --prefix=/local/install --enable-static --disable-shared --with-python=no --with-threads=no && \
-	emmake make -j`nproc` && \
+	emmake make -j$(nproc) && \
 	emmake make install
 
 # Setting ENV vars for oniguruma and libxml
@@ -101,7 +101,7 @@ RUN echo "Configure PHP" && \
     -o /local/build/php-wasm-bridge/php-wasm-bridge.o && \
     echo "Compile PHP" && \
     cd php-src && \
-    emmake make -j`nproc`
+    emmake make -j$(nproc)
 
 # Compile PHP-WASM (ES6 JavaScript module)
 #
