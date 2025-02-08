@@ -20,6 +20,12 @@ jobs:
     # https://github.com/actions/runner-images
     runs-on: ubuntu-24.04
 
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     strategy:
       fail-fast: false
       matrix:
