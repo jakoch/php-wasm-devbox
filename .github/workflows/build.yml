@@ -72,7 +72,7 @@ jobs:
 
       # generate metadata for the build-stage image
       - name: ✏ Setup Docker Metadata
-        id: metadata-base
+        id: metadata-build-stage
         uses: docker/metadata-action@v5 # https://github.com/docker/metadata-action
         with:
           images: |
@@ -87,22 +87,22 @@ jobs:
             type=raw,value={{ date 'YYYYMMDD' }}-sha-{{ sha }},enabled=${{ github.event_name == 'push' }}
             type=raw,value=latest
 
-        # generate metadata for the deploy image
-    #   - name: ✏ Setup Docker Metadata
-    #     id: metadata-base
-    #     uses: docker/metadata-action@v5 # https://github.com/docker/metadata-action
-    #     with:
-    #       images: |
-    #         ${{ env.GHCR_IMAGE }}
-    #       flavor: |
-    #         latest=auto
-    #         prefix=${{ matrix.config.debian_codename }}-deploy-
-    #       tags: |
-    #         type=schedule,pattern={{ date 'YYYYMMDD' }}
-    #         type=semver,pattern={{ version }}
-    #         type=semver,pattern={{ major }}.{{ minor }}
-    #         type=raw,value={{ date 'YYYYMMDD' }}-sha-{{ sha }},enabled=${{ github.event_name == 'push' }}
-    #         type=raw,value=latest
+      # generate metadata for the deploy image
+      - name: ✏ Setup Docker Metadata
+        id: metadata-deploy-stage
+        uses: docker/metadata-action@v5 # https://github.com/docker/metadata-action
+        with:
+          images: |
+            ${{ env.GHCR_IMAGE }}
+          flavor: |
+            latest=auto
+            prefix=${{ matrix.config.debian_codename }}-deploy-
+          tags: |
+            type=schedule,pattern={{ date 'YYYYMMDD' }}
+            type=semver,pattern={{ version }}
+            type=semver,pattern={{ major }}.{{ minor }}
+            type=raw,value={{ date 'YYYYMMDD' }}-sha-{{ sha }},enabled=${{ github.event_name == 'push' }}
+            type=raw,value=latest
 
       - name: 🙏 Build Docker image
         uses: docker/build-push-action@v6 # https://github.com/docker/build-push-action
@@ -111,8 +111,20 @@ jobs:
           file: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
           target: build-stage
           platforms: linux/amd64
-          tags: ${{ steps.metadata-base.outputs.tags }}
-          labels: ${{ steps.metadata-base.outputs.labels }}
+          tags: ${{ steps.metadata-build-stage.outputs.tags }}
+          labels: ${{ steps.metadata-build-stage.outputs.labels }}
+          push: false
+          load: true
+
+      - name: 🙏 Build Docker image
+        uses: docker/build-push-action@v6 # https://github.com/docker/build-push-action
+        with:
+          context: .
+          file: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
+          target: deploy-stage
+          platforms: linux/amd64
+          tags: ${{ steps.metadata-deploy-stage.outputs.tags }}
+          labels: ${{ steps.metadata-deploy-stage.outputs.labels }}
           push: false
           load: true
 
@@ -127,7 +139,7 @@ jobs:
 
       - name: 🔄 Copy build artifacts from Docker image
         run: |
-          container_id=$(docker create ${{ secrets.DOCKER_USERNAME }}/php-wasm-builder:latest)
+          container_id=$(docker create ${{ env.GHCR_IMAGE }}:latest)
           docker cp $container_id:/php-wasm-build ./php-wasm
           docker rm $container_id
 
