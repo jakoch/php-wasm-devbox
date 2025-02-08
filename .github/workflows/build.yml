@@ -39,6 +39,9 @@ jobs:
       - name: 🤘 Checkout Code
         uses: actions/checkout@v4 # https://github.com/actions/checkout
 
+      - name: Set TERM for shtool
+        run: echo "TERM=xterm-256color" >> $GITHUB_ENV
+
       - name: 🔍 Run hadolint
         uses: hadolint/hadolint-action@v3.1.0 # https://github.com/hadolint/hadolint-action
         with:
