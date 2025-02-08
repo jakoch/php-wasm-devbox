@@ -29,6 +29,8 @@ RUN echo "Packages" && \
     apt-get autoremove -y && \
     apt-get clean autoclean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    echo "Configure git to avoid warnings" && \
+    git config --global advice.detachedHead false && \
     echo "Install Emscripten SDK" && \
 	git clone  https://github.com/emscripten-core/emsdk.git && \
 	cd emsdk && \
@@ -107,7 +109,8 @@ RUN echo "Configure PHP" && \
 #
 # Flags:
 # - o: output file
-# - O2: optimization level
+# - O3: optimization level
+# - g0: disable debug information
 # - flto=full: enable link-time optimization (LTO)
 # - v: verbose
 # - EXPORTED_FUNCTIONS: list of functions to export
@@ -129,6 +132,13 @@ RUN echo "Configure PHP" && \
 # Ignore the following warning, automatic memory growth is intentionally disabled:
 # - emcc: warning: MAXIMUM_MEMORY is only meaningful with ALLOW_MEMORY_GROWTH [-Wunused-command-line-argument]
 #
+# Notes on Debugging:
+# - o2: optimization level would trigger a warning: running limited binaryen optimizations
+# because DWARF info requested (or indirectly required) [-Wlimited-postlink-optimizations]
+# - switched to o3 with g0 to disable debug information
+# Maybe -gseparate-dwarf is an option to keep debug information in a separate file.
+# Or -gsource-map to generate a source map.
+#
 # For debugging builds:
 # -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=1 -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2
 #
@@ -138,7 +148,8 @@ RUN echo "Configure PHP" && \
 RUN echo "Create PHP-WASM (ES6 JavaScript module)" && \
     mkdir -p /php-wasm-bridge && \
  	emcc -o /php-wasm-bridge/php-$PHP_VERSION-web.mjs \
- 	-O2 \
+ 	-O3 \
+    -g0 \
     -flto=full \
     -v \
  	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_exec", "_phpw_run", "_chdir", "_setenv", "_php_embed_init", "_php_embed_shutdown", "_zend_eval_string"]' \
