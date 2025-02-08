@@ -102,7 +102,7 @@ RUN echo "Configure PHP" && \
     -c /local/src/php-wasm-bridge.c \
     -o /local/build/php-wasm-bridge/php-wasm-bridge.o && \
     echo "Compile PHP" && \
-    cd php-src && \
+    cd /local/src/php-src && \
 	emmake make -j"$(nproc)"
 
 # Compile PHP-WASM (ES6 JavaScript module)
