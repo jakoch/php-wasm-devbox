@@ -4,9 +4,15 @@
 		// The repository contains one image:
 		// - "./debian/bookworm/Dockerfile" (default)
 		"dockerfile": "./debian/bookworm/Dockerfile",
-		// The the context to the repository root,
-        // so that the Dockerfile can copy files from the /src folder
-		"context": ".."
+		// Set the context to the repository root,
+        // so that the Dockerfile can copy files from the /src folder.
+		"context": "..",
+        // This Dockerfile consists of multiple stages: a build stage and a deploy stage.
+        // The build stage is used as the devcontainer image, allowing us to modify
+        // and rebuild PHP-WASM with custom compilation settings.
+        // The deploy stage produces a smaller image for deployment, containing only
+        // the PHP-WASM build artifacts from the build stage.
+        "target": "build-stage"
 	},
     "capAdd": [
         "SYS_PTRACE"
