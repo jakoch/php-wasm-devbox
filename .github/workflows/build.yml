@@ -137,9 +137,9 @@ jobs:
         run: |
           docker push --all-tags ${{ env.GHCR_IMAGE }}
 
-      - name: 🔄 Copy build artifacts from Docker image
+      - name: 🔄 Copy build artifacts from the "deploy-stage" Docker image
         run: |
-          container_id=$(docker create ${{ env.GHCR_IMAGE }}:latest)
+          container_id=$(docker create ${{ env.GHCR_IMAGE }}:${{ matrix.config.debian_codename }}-deploy-latest)
           docker cp $container_id:/php-wasm-build ./php-wasm
           docker rm $container_id
 
