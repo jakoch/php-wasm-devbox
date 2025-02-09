@@ -7,6 +7,10 @@
 .git/
 .github/
 .vscode/
+.dockerignore
+.editorconfig
+.hadolint.yaml
 LICENSE
+README.md
 
-*.rst
+# only /src folder is needed
