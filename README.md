@@ -1,1 +1,46 @@
 # PHP-WASM-DEVBOX
+
+## What is this?
+
+This repository provides a streamlined development environment for building and deploying the PHP-WASM module.
+
+It builds upon Derick Rethan's [php-wasm-builder](https://github.com/derickr/php-wasm-builder),
+using its Dockerfile and `phpw.c` source file as a foundation.
+From there, I made extensive modifications to enhance flexibility, efficiency, and automation.
+
+### Key Features
+
+- **Devcontainer support**: Seamless PHP-WASM development using VSCode or any Devcontainer-compatible editor.
+- **Multi-stage Dockerfile**:
+  - **Build stage**: Customizable compilation settings for PHP-WASM.
+  - **Deploy stage**: Minimal, production-ready image based on **Debian Bookworm-slim**.
+- **Automated CI/CD releases**: GitHub Actions workflows for publishing artifacts, releases, and container images.
+
+## Modifications
+
+This project significantly refactors the original **php-wasm-builder**
+repository to improve structure, maintainability, and deployment efficiency.
+
+### Code & Structure Changes
+- **Renamed** `phpw.c` → `php-wasm-bridge.c` and moved it to `/src`.
+- **Added comments** to clarify bridge functionality and interactions with PHP.
+
+### Optimized Dockerfile
+- **Reduced image size** by minimizing layers and merging `RUN` sections.
+- **Improved documentation** of compiler flags.
+- **Implemented Hadolint recommendations** for best practices.
+- **Introduced multi-stage build**:
+  - **Build stage:** Sets up the compilation toolchain with all necessary dependencies for building the PHP-WASM module. This allows customization of compilation settings and recompilation if needed. This is the image used by the devcontainer.
+  - **Deploy stage:** A lightweight environment containing only the PHP-WASM module, optimized for running PHP-WASM in a minimal container.
+
+
+### Development & CI/CD Integration
+- **Devcontainer support** for an instant development environment.
+- **GitHub Actions workflows** for automated:
+  - Artifact uploads
+  - Release publishing
+  - Container deployment to GHCR
+
+### Linting & Best Practices
+- Integrated **Hadolint** for Dockerfile linting.
+

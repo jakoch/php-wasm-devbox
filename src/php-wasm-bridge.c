@@ -1,6 +1,8 @@
 /**
- * Copyright (c) 2025 The PHP Foundation
- * Copyright (c) 2023-2024 Antoine Bluchet
+ * SPDX-FileCopyrightText: 2025 The PHP Foundation
+ * SPDX-FileCopyrightText: 2023-2024 Antoine Bluchet
+ * SPDX-FileCopyrightText: 2025 Jens A. Koch
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),

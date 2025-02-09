@@ -1,3 +1,11 @@
+#
+# SPDX-FileCopyrightText: 2025 Derick Rethans
+# SPDX-FileCopyrightText: 2025 Jens A. Koch
+# SPDX-License-Identifier: MIT
+#
+# This file is part of https://github.com/jakoch/php-wasm-devbox
+#
+
 FROM debian:bookworm-slim AS build-stage
 
 ARG PHP_VERSION=8.4.3
