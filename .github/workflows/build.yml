@@ -1,3 +1,13 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# .github/workflows/build.yml
+#
+# SPDX-FileCopyrightText: 2025 Jens A. Koch.
+# SPDX-License-Identifier: MIT
+#
+# This file is part of https://github.com/jakoch/php-wasm-devbox
+#
+
 name: Build Docker Image
 
 on:
@@ -140,6 +150,7 @@ jobs:
       - name: 🔄 Copy build artifacts from the "deploy-stage" Docker image
         run: |
           container_id=$(docker create ${{ env.GHCR_IMAGE }}:${{ matrix.config.debian_codename }}-deploy-latest)
+          docker exec $container_id ls -l /php-wasm
           docker cp $container_id:/php-wasm/ ./php-wasm
           docker rm $container_id
 
@@ -150,7 +161,7 @@ jobs:
 
       - name: 📦 Package Artifact
         run: |
-          7z a -tzip -mx9 "${{ env.PHP_WASM_ARTIFACT_ZIPFILE }}" "/php-wasm"
+          7z a -tzip -mx9 "${{ env.PHP_WASM_ARTIFACT_ZIPFILE }}" "php-wasm"
 
       - name: 📦 🚀 Upload Artifact
         uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
