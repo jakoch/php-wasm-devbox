@@ -167,3 +167,28 @@ jobs:
         with:
           name: ${{ env.PHP_WASM_ARTIFACT_NAME }}
           path: ${{ env.PHP_WASM_ARTIFACT_ZIPFILE}}
+
+      # This is a date-based version for repeatable releases.
+      - name: 🏷️ Versioning (Define Release Tag)
+        run: |
+          PHP_WASM_VERSION="${{ matrix.config.php_version }}"
+          BUILD_DATE=$(date +'%Y%m%d')
+          RELEASE_TAG="php-wasm-${PHP_WASM_VERSION}-${BUILD_DATE}"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+
+      - name: 📦 🚀 Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_NOTES="• PHP-WASM module using PHP v${{ matrix.config.php_version }}"
+          echo "🚀 Creating new release: ${{ env.RELEASE_TAG }}"
+          gh release create "${{ env.RELEASE_TAG }}" \
+            --title "${{ env.RELEASE_TAG }}" \
+            --notes "$RELEASE_NOTES" \
+            --latest
+
+      - name: 📦 🔼 Upload Release Artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ env.RELEASE_TAG }}" "${{ env.PHP_WASM_ARTIFACT_ZIPFILE }}"
