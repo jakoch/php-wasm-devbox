@@ -31,10 +31,8 @@ jobs:
     runs-on: ubuntu-24.04
 
     permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
+      contents: write # permit to create a release on Github Releases
+      packages: write # permit to upload and publish packages on GitHub Packages
 
     strategy:
       fail-fast: false
