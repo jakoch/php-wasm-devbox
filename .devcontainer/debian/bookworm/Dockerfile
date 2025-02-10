@@ -8,9 +8,27 @@
 
 FROM debian:bookworm-slim AS build-stage
 
+# +-----------------------------+
+# | ARGS                        |
+# +-----------------------------+
+
 ARG PHP_VERSION=8.4.3
 ARG ONIGURUMA_VERSION=6.9.10
 ARG LIBXML_VERSION=2.13.5
+
+# +-----------------------------+
+# | METADATA                    |
+# +-----------------------------+
+# Standardized Docker Image Labels
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md
+
+LABEL \
+    org.opencontainers.image.title=php-wasm-devbox \
+    org.opencontainers.image.description="A Docker-based devcontainer for building and deploying PHP-WASM module." \
+    org.opencontainers.image.authors='Jens A. Koch <jakoch@web.de>' \
+    org.opencontainers.image.licenses=MIT \
+    org.opencontainers.image.url=https://github.com/jakoch/php-wasm-devbox \
+    org.opencontainers.image.source=https://github.com/jakoch/php-wasm-devbox
 
 WORKDIR /local/src
 
