@@ -151,7 +151,7 @@ jobs:
           docker cp $container_id:/php-wasm/ ./php-wasm
           docker rm $container_id
 
-      - name: 🏷️ Versionize Artifact
+      - name: 🏷️ Versioning of Artifact
         run: |
           echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ matrix.config.php_version }}" >> "$GITHUB_ENV"
           echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ matrix.config.php_version }}.zip" >> "$GITHUB_ENV"
@@ -167,12 +167,10 @@ jobs:
           path: ${{ env.PHP_WASM_ARTIFACT_ZIPFILE}}
 
       # This is a date-based version for repeatable releases.
-      - name: 🏷️ Versioning (Define Release Tag)
+      - name: 🏷️ Versioning of Release Tag
         run: |
-          PHP_WASM_VERSION="${{ matrix.config.php_version }}"
           BUILD_DATE=$(date +'%Y%m%d')
-          RELEASE_TAG="php-wasm-${PHP_WASM_VERSION}-${BUILD_DATE}"
-          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=${{ env.PHP_WASM_ARTIFACT_NAME }}-${BUILD_DATE}" >> "$GITHUB_ENV"
 
       - name: 📦 🚀 Create Release
         env:
