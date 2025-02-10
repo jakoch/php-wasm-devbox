@@ -8,7 +8,20 @@ It builds upon Derick Rethan's [php-wasm-builder](https://github.com/derickr/php
 using its Dockerfile and `phpw.c` source file as a foundation.
 From there, I made extensive modifications to enhance flexibility, efficiency, and automation.
 
-### Key Features
+### What is PHP-WASM?
+
+PHP-WASM is a WebAssembly module that runs PHP directly in the browser, compiled
+ using Emscripten. It eliminates the need for a server, allowing PHP code to
+ execute entirely on the client side.
+
+You can call PHP functions from JavaScript by interacting with the WebAssembly
+module, enabling seamless integration between both languages.
+
+A great example of its use is interactive PHP documentation, where small code
+snippets can be executed instantly on the client side, or an online PHP
+playground—similar to 3v4l, but running entirely in the browser.
+
+#### Key Features
 
 - **Devcontainer support**: Seamless PHP-WASM development using VSCode or any Devcontainer-compatible editor.
 - **Multi-stage Dockerfile**:
@@ -22,19 +35,25 @@ This project significantly refactors the original **php-wasm-builder**
 repository to improve structure, maintainability, and deployment efficiency.
 
 ### Code & Structure Changes
+
 - **Renamed** `phpw.c` → `php-wasm-bridge.c` and moved it to `/src`.
 - **Added comments** to clarify bridge functionality and interactions with PHP.
 
 ### Optimized Dockerfile
+
 - **Reduced image size** by minimizing layers and merging `RUN` sections.
 - **Improved documentation** of compiler flags.
 - **Implemented Hadolint recommendations** for best practices.
 - **Introduced multi-stage build**:
-  - **Build stage:** Sets up the compilation toolchain with all necessary dependencies for building the PHP-WASM module. This allows customization of compilation settings and recompilation if needed. This is the image used by the devcontainer.
-  - **Deploy stage:** A lightweight environment containing only the PHP-WASM module, optimized for running PHP-WASM in a minimal container.
-
+  - **Build stage:** Sets up the compilation toolchain with all necessary
+    dependencies for building the PHP-WASM module. This allows customization of
+    compilation settings and recompilation if needed. This is the image used by
+    the devcontainer.
+  - **Deploy stage:** A lightweight environment containing only the PHP-WASM
+    module, optimized for running PHP-WASM in a minimal container.
 
 ### Development & CI/CD Integration
+
 - **Devcontainer support** for an instant development environment.
 - **GitHub Actions workflows** for automated:
   - Artifact uploads
@@ -42,5 +61,5 @@ repository to improve structure, maintainability, and deployment efficiency.
   - Container deployment to GHCR
 
 ### Linting & Best Practices
-- Integrated **Hadolint** for Dockerfile linting.
 
+- Integrated **Hadolint** for Dockerfile linting.
