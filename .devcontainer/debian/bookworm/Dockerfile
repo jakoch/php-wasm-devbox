@@ -189,7 +189,7 @@ RUN echo "Create PHP-WASM (ES6 JavaScript module)" && \
     -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
     -s EXPORT_ES6=1 \
     -s MODULARIZE=1 \
-    -s EXPORT_NAME=createPhpModule \
+    -s EXPORT_NAME=phpWasmModule \
     -s INVOKE_RUN=0 \
     -s LZ4=1 \
     /local/build/php-wasm-bridge/php-wasm-bridge.o \
