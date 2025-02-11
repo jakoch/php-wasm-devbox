@@ -28,6 +28,7 @@ playground—similar to 3v4l, but running entirely in the browser.
   - **Build stage**: Customizable compilation settings for PHP-WASM.
   - **Deploy stage**: Minimal, production-ready image based on **Debian Bookworm-slim**.
 - **Automated CI/CD releases**: GitHub Actions workflows for publishing artifacts, releases, and container images.
+- **PHP Language Playground**: Provides a small language playground which is released to Github Pages.
 
 ## Modifications
 
@@ -59,7 +60,14 @@ repository to improve structure, maintainability, and deployment efficiency.
   - Artifact uploads
   - Release publishing
   - Container deployment to GHCR
+  - Playground deployment to Github Pages
 
 ### Linting & Best Practices
 
 - Integrated **Hadolint** for Dockerfile linting.
+
+### Developing the playground
+
+- start `php -S localhost:8000` in the playground folder
+- browse to `localhost:8000`
+- start editing `/playground` files

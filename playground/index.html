@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP-WASM Playground</title>
+    <meta name="description" content="PHP-WASM Playground - a simple in-browser editor for PHP using WebAssembly." />
+    <link rel="shortcut icon" href="assets/favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css">
+</head>
+<body>
+    <h1>PHP-WASM Playground</h1>
+
+<textarea id="editor">
+&lt;?php
+// Display PHP version and loaded extensions
+echo 'PHP Version: ' . phpversion() . "\n";
+echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
+?&gt;
+</textarea>
+
+    <button id="run">Run</button>
+
+    <pre id="output">Ready!</pre>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/mode/php/php.min.js"></script>
+    <script type="module" src="assets/js/playground.js"></script>
+</body>
+</html>
