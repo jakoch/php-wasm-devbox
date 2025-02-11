@@ -59,11 +59,18 @@ async function runPhpCode(editor, output) {
     try {
         const runPhp = await PHP.loadPhp();
         const script = editor.getValue();
+
+        const startTime = performance.now();
+
         runPhp(script);
+
+        const endTime = performance.now();
+
+        const elapsedTime = (endTime - startTime).toFixed(3);  // Time in ms
 
         // delay to ensure buffer is ready
         setTimeout(() => {
-            output.textContent = `${PHP.buffer.join("\n")}`;
+            output.textContent = `${PHP.buffer.join("\n")}\n\nExecution time: ${elapsedTime} ms`;
         }, 100);
     } catch (error) {
         output.textContent = `JS Error: ${error.message}`;
