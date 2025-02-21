@@ -1,5 +1,5 @@
 {
-	"name": "php-wasm-buildbox",
+	"name": "php-wasm-devbox",
 	"build": {
 		// The repository contains one image:
 		// - "./debian/bookworm/Dockerfile" (default)
