@@ -48,3 +48,13 @@ h1 {
     text-align: left;
     white-space: pre-wrap;
 }
+
+/* Ensure full height */
+#editor-container {
+    height: calc(100vh - 56px); /* avoid navbar overlap */
+    padding-top: 56px; /* Offset the fixed navbar height */
+}
+
+#left, #right {
+    height: 100%;
+}

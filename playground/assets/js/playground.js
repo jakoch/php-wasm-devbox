@@ -4,19 +4,27 @@ import phpBinary from '../wasm/php-8.4.3-web.mjs';
 
 // Setup Playground
 document.addEventListener("DOMContentLoaded", () => {
-    const editor = initEditor();
-    const output = document.getElementById("output");
-    const runButton = document.getElementById("run");
+    const editor = initEditor();                                // code input
+    const output = document.getElementById("output");           // result output
+    const performance = document.getElementById("perf-data");   // performance data
+    const php_version = document.getElementById("php-version"); // php version
 
-    runButton.addEventListener("click", () => runPhpCode(editor, output));
+    const runButton = document.getElementById("run");           // run button
+    runButton.addEventListener("click", () => runPhpCode(editor, output, performance, php_version));
 });
 
 // Initialize CodeMirror editor
 function initEditor() {
-    return CodeMirror.fromTextArea(document.getElementById("editor"), {
+    const codeElement = document.getElementById("editor");
+    return CodeMirror.fromTextArea(codeElement, {
         mode: "text/x-php",
+        matchBrackets: true,
         lineNumbers: true,
-        theme: "default"
+        indentUnit: 4,
+        indentWithTabs: true,
+        theme: 'monokai',
+        gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
+        extraKeys: { Tab: "indentMore" }
     });
 }
 
@@ -54,23 +62,21 @@ const PHP = {
     }
 };
 
-async function runPhpCode(editor, output) {
+async function runPhpCode(editor, output, performance, php_version) {
     output.textContent = "Running...";
     try {
         const runPhp = await PHP.loadPhp();
         const script = editor.getValue();
 
-        const startTime = performance.now();
-
+        const timer = new Timer("PHP Script");
         runPhp(script);
-
-        const endTime = performance.now();
-
-        const elapsedTime = (endTime - startTime).toFixed(3);  // Time in ms
+        const elapsedTime = timer.stop().totalTime;
 
         // delay to ensure buffer is ready
         setTimeout(() => {
-            output.textContent = `${PHP.buffer.join("\n")}\n\nExecution time: ${elapsedTime} ms`;
+            output.textContent = `${PHP.buffer.join("\n")}`;
+            php_version.textContent = `${PHP.version}`;
+            performance.textContent = `Execution time: ${elapsedTime} ms`;
         }, 100);
     } catch (error) {
         output.textContent = `JS Error: ${error.message}`;
