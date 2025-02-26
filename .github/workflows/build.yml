@@ -38,7 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { debian_codename: "bookworm", debian_version: "12", php_version: "8.1.4" }
+        - { debian_codename: "bookworm", debian_version: "12" }
 
     env:
       GHCR_IMAGE: ghcr.io/${{ github.repository }}
@@ -153,8 +153,9 @@ jobs:
 
       - name: 🏷️ Versioning of Artifact
         run: |
-          echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ matrix.config.php_version }}" >> "$GITHUB_ENV"
-          echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ matrix.config.php_version }}.zip" >> "$GITHUB_ENV"
+          echo "PHP_WASM_VERSION=$(echo php-*-web.mjs | grep -oP '(?<=php-)\d+\.\d+\.\d+')" >> "$GITHUB_ENV"
+          echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ env.PHP_WASM_VERSION }}" >> "$GITHUB_ENV"
+          echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ env.PHP_WASM_VERSION }}.zip" >> "$GITHUB_ENV"
 
       - name: 📦 Package Artifact
         run: |
@@ -176,7 +177,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_NOTES="• PHP-WASM module using PHP v${{ matrix.config.php_version }}"
+          RELEASE_NOTES="• PHP-WASM module using PHP v${{ env.PHP_WASM_VERSION }}"
           echo "🚀 Creating new release: ${{ env.RELEASE_TAG }}"
           gh release create "${{ env.RELEASE_TAG }}" \
             --title "${{ env.RELEASE_TAG }}" \
