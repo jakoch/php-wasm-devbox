@@ -7,72 +7,209 @@
     <title>PHP-WASM Playground</title>
     <meta name="description" content="PHP-WASM Playground - a simple in-browser editor for PHP using WebAssembly." />
     <link rel="shortcut icon" href="assets/favicon.ico" />
+    <!-- Style -->
     <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
+          integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- CodeMirror Style & Theme -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+          integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css"
+          integrity="sha512-R6PH4vSzF2Yxjdvb2p2FA06yWul+U0PDDav4b/od/oXf9Iw37zl10plvwOXelrjV2Ai7Eo3vyHeyFUjhXdBCVQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
-<body>
-    <div class="container-fluid p-3">
-        <nav class="navbar navbar-dark bg-dark navbar-expand-lg fixed-top">
-            <div class="container container-md">
-                <div class="d-flex align-items-center">
-                    <a class="navbar-brand me-3" href="#">PHP-WASM Playground</a>
-                    <button id="run" class="btn btn-success">&#9658; Run</button>
-                </div>
+<body style="background-color: var(--bs-gray-800); color: var(--bs-white);">
+
+    <!-- Header Navbar -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow border-bottom border-dark">
+        <nav class="container-xxl bd-gutter flex-wrap flex-lg-nowrap">
+            <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Module Playground">PHP-WASM</a>
+            <div class="d-lg-none" style="width: 4.25rem;"></div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bdNavbar" aria-controls="bdNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse flex-grow-1" id="bdNavbar">
+                <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-lg-0">
+                     <li class="nav-item">
+                        <a id="playground-link" class="nav-link fs-4" href="#">Playground</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="help-link" class="nav-link fs-4" href="#">Help</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="help-link" class="nav-link fs-4" href="https://github.com/jakoch/php-wasm-devbox/issues">Report Issues | Request Feature</a>
+                    </li>
+                    <li class="nav-item">
+                        <span class="text-white-50">https://github.com/jakoch/php-wasm-devbox/</span>
+                    </li>
+                </ul>
             </div>
         </nav>
+    </header>
 
-        <div id="editor-container" class="row gx-3">
-            <!-- Left Side (Editor) -->
-            <div id="left" class="col-6">
-                <div id="editor-wrapper" class="card h-100">
-                    <div id="editor-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">PHP Code</span>
-                        <div id="editor-header" class="d-flex align-items-center gap-2">
-                            <span id="php-name" class="text-white-50">PHP Version:</span>
-                            <span id="php-version" class="fw-bold">0.0.0</span>
-                        </div>
+    <div id="main-container" class="m-4 p-4">
+
+    <!-- Help -->
+    <div id="help-container" class="card bg-dark h-100 border border-dark bg-dark d-none pb-4 mb-4 fs-4">
+        <div id="help-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-question-octagon" viewBox="0 0 16 16">
+                    <path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353zM5.1 1 1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1z"/>
+                    <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94"/>
+                </svg>
+                <span class="fw-bold fs-4 p-1">Help</span>
+            </div>
+        </div>
+        <div id="help-body" class="card-body text-white">
+            <h4>Welcome to the PHP-WASM Playground!</h4>
+            <p>The PHP-WASM Playground is a simple in-browser editor using the PHP-WASM module. It is not a fully featured IDE.</p>
+            <p>The PHP-WASM module is the PHP interpreter compiled to WebAssembly using Emscripten. It allows you to run PHP code directly in the browser.</p>
+            <h4>Usage</h4>
+            <p>Write your PHP code in the editor on the left and click the Run button to execute it. You will see the result in the output panel on the right.</p>
+            <p>Keep in mind to start with the usual PHP opening tag: <code>&lt;?php</code></p>
+            <p>For issues related to the PHP-WASM module or this playground, please visit:
+              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-github" viewBox="0 0 16 16">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
+              </svg>
+              <a href="https://github.com/jakoch/php-wasm-devbox/issues">github.com/jakoch/php-wasm-devbox/issues</a>
+            </p>
+            <h4><u>Interactions</u></h4>
+            <div class="row">
+                <div class="col-2 fw-bold">Run Button</div>
+                <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.</div>
+            </div>
+            <div class="row">
+                <div class="col-2 fw-bold">Save Button</div>
+                <div class="col-9">Saves the PHP code to file.</div>
+            </div>
+            <div class="row">
+                <div class="col-2 fw-bold">Reset Button</div>
+                <div class="col-9">Resets the PHP code editor to a basic hello world example.</div>
+            </div>
+            <div class="row">
+                <div class="col-2 fw-bold">Editor Dropdown</div>
+                <div class="col-9">You can switch between CodeMirror and Monaco editors using the editor type selector.</div>
+            </div>
+            <div class="row">
+                <div class="col-2 fw-bold">PHP Version Dropdown</div>
+                <div class="col-9">You can switch the PHP Version using the PHP version selector.</div>
+            </div>
+            <div class="row">
+                <div class="col-2 fw-bold">Output Mode Toggle</div>
+                <div class="col-9">You can toggle the output mode and select between raw text and HTML rendering.</div>
+            </div>
+            <h4><u>Status Displays</u></h4>
+            <div class="row">
+                <div class="col-2 fw-bold">PHP Version Display</div>
+                <div class="col-9">Shows the PHP version used for executing your PHP code.</div>
+            </div>
+            <div class="row">
+                <div class="col-2 fw-bold">Performance Display</div>
+                <div class="col-9">Shows how long it took to run your PHP code.</div>
+            </div>
+        </div>
+    </div> <!-- /#help-container -->
+
+    <!-- Editor -->
+    <div id="editor-container" class="row">
+        <!-- Left Side (Editor) -->
+        <div id="left" class="col-6">
+            <div id="editor-wrapper" class="card bg-dark h-100">
+                <div id="editor-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="height: 60px;">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-filetype-php" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M14 4.5V14a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5zM1.6 11.85H0v3.999h.791v-1.342h.803q.43 0 .732-.173.305-.175.463-.474a1.4 1.4 0 0 0 .161-.677q0-.375-.158-.677a1.2 1.2 0 0 0-.46-.477q-.3-.18-.732-.179m.545 1.333a.8.8 0 0 1-.085.38.57.57 0 0 1-.238.241.8.8 0 0 1-.375.082H.788V12.48h.66q.327 0 .512.181.185.182.185.522m4.48 2.666V11.85h-.79v1.626H4.153V11.85h-.79v3.999h.79v-1.714h1.682v1.714zm.703-3.999h1.6q.433 0 .732.179.3.175.46.477.158.302.158.677t-.161.677q-.159.299-.463.474a1.45 1.45 0 0 1-.733.173H8.12v1.342h-.791zm2.06 1.714a.8.8 0 0 0 .084-.381q0-.34-.184-.521-.184-.182-.513-.182h-.66v1.406h.66a.8.8 0 0 0 .375-.082.57.57 0 0 0 .237-.24Z"/>
+                        </svg>
+                        <span class="fw-bold fs-4 p-1 align-middle">Code Editor</span>
                     </div>
-                    <div id="editor-body" class="card-body">
-                        <textarea id="editor" class="form-control" rows="15">
-    &lt;?php
-    // Display PHP version and loaded extensions
-    echo 'PHP Version: ' . phpversion() . "\n";
-    echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
-    ?&gt;
-                        </textarea>
+                    <!-- Editor Controls -->
+                    <div class="d-flex justify-content-center gap-2">
+                        <button id="run-button" class="btn btn-warning">&#x23F5; Run</button>
+                        <button id="save-button" class="btn btn-secondary">&#x1F4BE; Save</button>
+                        <button id="reset-button" class="btn btn-danger">&#x21BA; Reset</button>
+                    </div>
+                    <div class="d-flex gap-2">
+                         <!-- Editor Selector -->
+                        <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;">
+                            <option value="monaco">Monaco</option>
+                            <option value="codemirror">CodeMirror</option>
+                        </select>
+                        <!-- PHP Version Selector -->
+                        <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;">
+                            <option value="8.4.3">PHP 8.4.3</option>
+                            <option value="8.4.0">PHP 8.4.0</option>
+                        </select>
+                    </div>
+                    <!-- PHP Version Display -->
+                    <div id="php-version-display" class="d-flex align-items-center gap-2">
+                        <span id="php-name" class="text-white-50">PHP Version:</span>
+                        <span id="php-version" class="fw-bold">0.0.0</span>
                     </div>
                 </div>
-            </div>
+                <div id="editor-body" class="card-body">
+                    <!-- Editor -->
+                    <textarea id="editor" class="form-control" rows="15">
+&lt;?php
 
-            <!-- Right Side (Output) -->
-            <div id="right" class="col-6">
-                <div id="output-wrapper" class="card h-100">
-                    <div id="output-header" class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">Output</span>
-                        <div id="performance-wrapper" class="d-flex align-items-center gap-2">
-                            <span id="perf-name" class="text-white-50">Performance |</span>
-                            <span id="perf-data" class="fw-bold">20ms</span>
-                        </div>
-                    </div>
-
-                    <div id="output" class="card-body">
-                        <pre id="output" class="p-2">Ready!</pre>
-                    </div>
+// Display PHP version and loaded extensions
+echo 'PHP Version: ' . phpversion() . "\n";
+echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
+</textarea>
                 </div>
             </div>
         </div>
 
-    </div>
+        <!-- Right Side (Output) -->
+        <div id="right" class="col-6">
+            <div id="output-wrapper" class="card bg-dark h-100">
+                <div id="output-header" class="card-header bg-success text-white d-flex justify-content-between align-items-center" style="height: 60px;">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-terminal" viewBox="0 0 16 16">
+                            <path d="M6 9a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3A.5.5 0 0 1 6 9M3.854 4.146a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708z"/>
+                            <path d="M2 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
+                        </svg>
+                        <span class="fw-bold fs-4 p-1 align-middle">Output</span>
+                    </div>
+                    <!-- Toggle Output Type: raw text or HTML -->
+                    <div class="form-check form-switch text-white ms-3">
+                        <input class="form-check-input" type="checkbox" id="output-mode-switcher">
+                        <label class="form-check-label" for="output-mode-switcher">Toggle Output Type (off: Raw | on: HTML)</label>
+                    </div>
+                    <!-- Performance Display -->
+                    <div id="performance-display" class="d-flex align-items-center gap-2">
+                        <span id="perf-name" class="text-white-50">Performance:</span>
+                        <span id="perf-data" class="fw-bold">20ms</span>
+                    </div>
+                </div>
+                <div id="result-output" class="card-body">
+                    <pre id="output" class="p-2 border border-dark rounded">Ready!</pre>
+                </div>
+            </div>
+        </div>
+    </div> <!-- /#editor-container -->
 
-    <!-- The CodeMirror -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js"></script>
-     <!-- The CodeMirror Modes -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/mode/php/php.min.js"></script>
+    </div> <!-- /#main-container -->
+
+    <!-- Footer -->
+    <footer class="text-center text-white-50 py-3">
+        <div>PHP-WASM Playground<br>(c) 2025 Jens A. Koch</div>
+    </footer>
+
+    <!-- CodeMirror Editor & Mode -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+            integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/php/php.min.js"
+            integrity="sha512-jZGz5n9AVTuQGhKTL0QzOm6bxxIQjaSbins+vD3OIdI7mtnmYE6h/L+UBGIp/SssLggbkxRzp9XkQNA4AyjFBw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"
+            integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Playground Scripts -->
     <script src="assets/js/timer.js"></script>
     <script type="module" src="assets/js/playground.js"></script>
 </body>

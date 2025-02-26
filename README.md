@@ -68,6 +68,7 @@ repository to improve structure, maintainability, and deployment efficiency.
 
 ### Developing the playground
 
-- start `php -S localhost:8000` in the playground folder
-- browse to `localhost:8000`
-- start editing `/playground` files
+- Start editing `/playground` files.
+- Start the server with `php -S localhost:8000` in the playground folder.
+- Browse to `localhost:8000`.
+- For the todo and feature list, refer to the [playground readme](./playground/readme.md).
