@@ -153,7 +153,7 @@ jobs:
 
       - name: 🏷️ Versioning of Artifact
         run: |
-          echo "PHP_WASM_VERSION=$(echo php-*-web.mjs | grep -oP '(?<=php-)\d+\.\d+\.\d+')" >> "$GITHUB_ENV"
+          echo "PHP_WASM_VERSION=$(find ./php-wasm -name 'php-*-web.mjs' | head -n1 | grep -oP '(?<=php-)\d+\.\d+\.\d+')" >> "$GITHUB_ENV"
           echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ env.PHP_WASM_VERSION }}" >> "$GITHUB_ENV"
           echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ env.PHP_WASM_VERSION }}.zip" >> "$GITHUB_ENV"
 
