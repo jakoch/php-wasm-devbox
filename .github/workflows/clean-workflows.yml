@@ -16,6 +16,10 @@ on:
   # You can manually run this workflow.
   workflow_dispatch:
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   cleanup-workflows:
     name: "Clean Workflows"
