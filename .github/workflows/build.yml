@@ -112,7 +112,7 @@ jobs:
             type=raw,value={{ date 'YYYYMMDD' }}-sha-{{ sha }},enabled=${{ github.event_name == 'push' }}
             type=raw,value=latest
 
-      - name: 🙏 Build Docker image
+      - name: 🙏 Build Docker image (build-stage)
         uses: docker/build-push-action@v6 # https://github.com/docker/build-push-action
         with:
           context: .
@@ -124,7 +124,7 @@ jobs:
           push: false
           load: true
 
-      - name: 🙏 Build Docker image
+      - name: 🙏 Build Docker image (deploy-stage)
         uses: docker/build-push-action@v6 # https://github.com/docker/build-push-action
         with:
           context: .
