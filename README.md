@@ -1,4 +1,4 @@
-# PHP-WASM-DEVBOX
+# PHP-WASM-DEVBOX [![Build Docker Image](https://github.com/jakoch/php-wasm-devbox/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/jakoch/php-wasm-devbox/actions/workflows/build.yml)
 
 ## What is this?
 
