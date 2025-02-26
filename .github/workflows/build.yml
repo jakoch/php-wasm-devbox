@@ -151,9 +151,12 @@ jobs:
           docker cp $container_id:/php-wasm/ ./php-wasm
           docker rm $container_id
 
-      - name: 🏷️ Versioning of Artifact
+      - name: 🏷️ Get PHP Version from Artifact
         run: |
           echo "PHP_WASM_VERSION=$(find ./php-wasm -name 'php-*-web.mjs' | head -n1 | grep -oP '(?<=php-)\d+\.\d+\.\d+')" >> "$GITHUB_ENV"
+
+      - name: 🏷️ Versioning of Artifact
+        run: |
           echo "PHP_WASM_ARTIFACT_NAME=php-wasm-${{ env.PHP_WASM_VERSION }}" >> "$GITHUB_ENV"
           echo "PHP_WASM_ARTIFACT_ZIPFILE=php-wasm-${{ env.PHP_WASM_VERSION }}.zip" >> "$GITHUB_ENV"
 
