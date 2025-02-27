@@ -115,13 +115,14 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            // Find workflow with name "Clean Workflow Runs"
-            const dependabotWorkflow = workflowsData.workflows.find(w => w.name === "Clean Workflow Runs");
-            if (!dependabotWorkflow) {
-              console.log("❌ No workflow named 'Clean Workflow Runs' found.");
+            // Find workflow by name
+            const workflowName = "Clean Workflow Runs";
+            const workflow = workflowsData.workflows.find(w => w.name === workflowName);
+            if (!workflow) {
+              console.log(`❌ No workflow named ${workflowName} found.`);
               return;
             }
-            const workflowId = dependabotWorkflow.id;
+            const workflowId = workflow.id;
             console.log(`✅ Found workflow ID: ${workflowId}`);
             // Fetch workflow runs
             for (let page = 0; page < pages; page += 1) {
@@ -165,13 +166,14 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            // Find workflow with name "Dependabot Updates"
-            const dependabotWorkflow = workflowsData.workflows.find(w => w.name === "Dependabot Updates");
-            if (!dependabotWorkflow) {
-              console.log("❌ No workflow named 'Dependabot Updates' found.");
+            // Find workflow by name
+            const workflowName = "Dependabot Updates";
+            const workflow = workflowsData.workflows.find(w => w.name === workflowName);
+            if (!workflow) {
+              console.log(`❌ No workflow named ${workflowName} found.`);
               return;
             }
-            const workflowId = dependabotWorkflow.id;
+            const workflowId = workflow.id;
             console.log(`✅ Found workflow ID: ${workflowId}`);
             // Fetch workflow runs
             for (let page = 0; page < pages; page += 1) {
