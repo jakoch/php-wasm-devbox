@@ -135,9 +135,7 @@ jobs:
               if (response.data.workflow_runs.length === 0) break;
               if (response.data.workflow_runs.length > 0) {
                 for (const run of response.data.workflow_runs) {
-                  if (run.triggering_actor?.login === 'dependabot[bot]') {
                     runs_to_delete.push([run.id, run.name]);
-                  }
                 }
               }
               if (response.data.workflow_runs.length < 50) break;
