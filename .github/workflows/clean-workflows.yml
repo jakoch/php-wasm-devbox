@@ -34,13 +34,13 @@ jobs:
           script: |
             const cancelled = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,
-              per_page: 100,
+              per_page: 50,
               repo: context.repo.repo,
               status: 'cancelled',
             });
             const skipped = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,
-              per_page: 100,
+              per_page: 50,
               repo: context.repo.repo,
               status: 'skipped',
             });
@@ -74,7 +74,7 @@ jobs:
                 let response = await github.rest.actions.listWorkflowRuns({
                   owner: context.repo.owner,
                   page: page,
-                  per_page: 100,
+                  per_page: 50,
                   repo: context.repo.repo,
                   workflow_id: workflow
                 });
@@ -112,9 +112,9 @@ jobs:
               let response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 page: page,
-                per_page: 100,
+                per_page: 50,
                 repo: context.repo.repo,
-                workflow_id: 'clean-workflows.yml'
+                workflow_id: ".github/workflows/clean-workflows.yml"
               });
               if (response.data.workflow_runs.length > 0) {
                 for (const run of response.data.workflow_runs) {
@@ -161,7 +161,7 @@ jobs:
                 repo: context.repo.repo,
                 workflow_id: workflowId, // Use dynamically fetched ID
                 page: page,
-                per_page: 100,
+                per_page: 50,
               });
               if (response.data.workflow_runs.length > 0) {
                 for (const run of response.data.workflow_runs) {
