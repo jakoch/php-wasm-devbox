@@ -122,7 +122,7 @@ jobs:
               return;
             }
             const workflowId = dependabotWorkflow.id;
-            console.log(`✅ Found Dependabot workflow ID: ${workflowId}`);
+            console.log(`✅ Found workflow ID: ${workflowId}`);
             // Fetch workflow runs
             for (let page = 0; page < pages; page += 1) {
               const response = await github.rest.actions.listWorkflowRuns({
@@ -174,7 +174,7 @@ jobs:
               return;
             }
             const workflowId = dependabotWorkflow.id;
-            console.log(`✅ Found Dependabot workflow ID: ${workflowId}`);
+            console.log(`✅ Found workflow ID: ${workflowId}`);
             // Fetch workflow runs
             for (let page = 0; page < pages; page += 1) {
               const response = await github.rest.actions.listWorkflowRuns({
