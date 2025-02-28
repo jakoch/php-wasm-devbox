@@ -1,3 +1,9 @@
+
+:root {
+    --bs-gray-900: #212529;
+    --bs-light: #f8f9fa;
+}
+
 .navbar {
     position: relative;
     background-color: var(--bs-gray-900);
@@ -42,7 +48,6 @@
     border: 1px solid #444;
     background-color: #2d2d2d;
     color: #ffffff;
-    padding: 10px;
     text-align: left;
     min-width: 100%;
 }
@@ -63,9 +68,18 @@
 
 #output {
     font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
-    font-size: 0.9em;
+    font-size: 1em;
     background-color: #333;
     color: #ffffff;
     text-align: left;
     white-space: pre-wrap;
 }
+
+.resizable-content {
+    min-height: 250px;
+    min-width: 100%;
+    resize: both;
+    overflow: auto;
+    max-height: fit-content;
+    max-width: fit-content;
+  }

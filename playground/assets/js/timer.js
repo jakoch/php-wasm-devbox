@@ -43,6 +43,41 @@ class Timer {
         performance.mark(this.startMark);
     }
 
+    /**
+     * Formats time in milliseconds to a human-readable string
+     * @param {number} ms - Time in milliseconds
+     * @param {string} [unit='ms'] - Unit to use ('ms' or 's')
+     * @returns {string} Formatted time string
+     */
+    formatTime(ms, unit = 'ms') {
+        if (!Number.isFinite(ms)) {
+            throw new Error('Invalid time value provided');
+        }
+
+        const time = unit === 's' ? ms / 1000 : ms;
+
+        /*if (time >= 3600000) {
+            const hours = Math.floor(time / 3600000);
+            const minutes = Math.floor((time % 3600000) / 60000);
+            const seconds = Math.floor((time % 60000) / 1000);
+            return `${hours}h ${minutes}m ${seconds}s`;
+        } else*/
+
+        if (time >= 60000) {
+            const minutes = Math.floor(time / 60000);
+            const seconds = Math.floor((time % 60000) / 1000);
+            return `${minutes}m ${seconds}s`;
+        }
+
+        if (time >= 1000) {
+            const seconds = Math.floor(time / 1000);
+            const milliseconds = Math.floor(time % 1000);
+            return `${seconds}s ${milliseconds}ms`;
+        }
+
+        return `${Math.round(time)}ms`;
+    }
+
     checkpoint(name = `Checkpoint ${this.checkpoints.length + 1}`) {
         const checkpointMark = `${this.label}-${name}`;
         performance.mark(checkpointMark);
