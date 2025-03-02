@@ -15,6 +15,7 @@ FROM debian:bookworm-slim AS build-stage
 ARG PHP_VERSION=8.4.3
 ARG ONIGURUMA_VERSION=6.9.10
 ARG LIBXML_VERSION=2.13.5
+ARG EMSCRIPTEN_VERSION=4.0.4
 
 # +-----------------------------+
 # | METADATA                    |
@@ -58,7 +59,7 @@ RUN echo "Packages" && \
     echo "Configure git to avoid warnings" && \
     git config --global advice.detachedHead false && \
     echo "Install Emscripten SDK" && \
-	git clone  https://github.com/emscripten-core/emsdk.git && \
+	git clone  https://github.com/emscripten-core/emsdk.git --branch $EMSCRIPTEN_VERSION --single-branch --depth 1 && \
 	cd emsdk && \
 	./emsdk install latest && \
 	./emsdk activate latest && \
