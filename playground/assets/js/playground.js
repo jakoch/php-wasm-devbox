@@ -366,7 +366,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         uiElements.output = result.output;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
-	});
+    });
 
     // save button
     const saveButton = document.getElementById("save-button");
@@ -393,11 +393,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // php version switcher
     const phpVersionDropdown = document.getElementById("php-version-switcher");
     phpVersionDropdown.addEventListener("change", async (event) => {
-		const result = await php.runPHP(editor.getContent(), event.target.value);
+        const result = await php.runPHP(editor.getContent(), event.target.value);
         uiElements.output = result.output;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
-	});
+    });
 
     /* Output */
 
