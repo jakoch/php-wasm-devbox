@@ -33,7 +33,7 @@
     }
     ```
 
-- [ ] Dropdown for selecting example code snippets to prefill the editor
+- [x] Dropdown for selecting example code snippets to prefill the editor
   - [x] Add some examples, e.g. `playground/examples/hello_world.php`
 - [x] Save button to save editor content as a PHP file
 - [ ] URL sharing feature (Not Implementing):

@@ -399,6 +399,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         uiElements.perfDataDisplay = result.executionTime;
     });
 
+    // php example switcher
+    const phpExampleDropdown = document.getElementById("php-example-switcher");
+    phpExampleDropdown.addEventListener("change", async (event) => {
+        const example = event.target.value;
+        const response = await fetch(`examples/_get_file.php?file=${example}`);
+        const content = await response.text();
+        editor.setContent(content);
+    });
+
     /* Output */
 
     // Output mode toggle checkbox (raw or html)

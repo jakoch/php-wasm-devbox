@@ -20,6 +20,6 @@ $json = json_encode($x, JSON_PRETTY_PRINT);
 
 var_dump($json);
 
-$decoded_json = json_decode($json, true)
+$decoded_json = json_decode($json, true);
 
 var_dump($decoded_json);
