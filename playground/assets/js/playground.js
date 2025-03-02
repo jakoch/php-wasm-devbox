@@ -45,14 +45,24 @@ class PHP {
         // load the PHP WASM module
         const modulePath = `../wasm/php-${php_version}-web.mjs`;
         const createPhpModule = (await import(modulePath)).default;
-        // init the PHP module
-        const { ccall } = await createPhpModule({
+
+        // options for the PHP module
+        const phpModuleOptions = {
             print: (data) => {
                 if (!data) return
                 if (PHP.buffer.length) PHP.buffer.push('\n');
                 PHP.buffer.push(data);
+            },
+            printErr: (data) => {
+                if (!data) return
+                if (PHP.buffer.length) PHP.buffer.push('\n');
+                PHP.buffer.push(data);
             }
-        });
+        };
+
+        // init the PHP module
+        const { ccall } = await createPhpModule(phpModuleOptions);
+
         // get PHP version
         PHP.version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
         //console.log(`PHP wasm ${PHP.version} loaded.`);
@@ -79,6 +89,8 @@ class PHP {
                 runPhp(script);
                 resolve();
             });
+
+            //const converted_output = UTF8.read_string(PHP.buffer.join(''));
 
             const elapsedTime = timer.stop().totalTime;
             return {
