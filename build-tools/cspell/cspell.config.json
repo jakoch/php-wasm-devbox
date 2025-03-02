@@ -21,6 +21,7 @@
       ".git/!(COMMIT_EDITMSG)",
       ".vscode/**",
       "build-tools/**",
+      "playground/assets/wasm/**",
       ".clang-format",
       "*.bat",
       "*.cmake",
