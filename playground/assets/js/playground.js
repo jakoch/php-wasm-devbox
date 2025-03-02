@@ -379,6 +379,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         saveToFile(content, filename);
     });
 
+    // copy button
+    const copyButton = document.getElementById("copy-button");
+    copyButton.addEventListener("click", () => {
+        const content = editor.getContent();
+        navigator.clipboard.writeText(content).then(() => {
+            console.log("Copied to clipboard:", content);
+        }).catch((error) => {
+            console.error("Failed to copy to clipboard:", error);
+        });
+    });
+
     // reset button
     const resetButton = document.getElementById("reset-button");
     resetButton.addEventListener("click", () => {
