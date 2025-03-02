@@ -131,12 +131,23 @@
                         <span class="fw-bold fs-4 p-2">Code Editor</span>
                     </div>
                     <!-- Editor Controls -->
-                    <div class="d-flex justify-content-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
                         <button id="run-button" class="btn btn-success">
-                            <i class="bi bi-filetype-php fs-4"></i> Run</button>
-                        <button id="save-button" class="btn btn-secondary">🖫 Save</button>
-                        <button id="copy-button" class="btn btn-secondary">📋 Copy</button>
-                        <button id="reset-button" class="btn btn-danger glyphicon glyphicon-stop">↺ Reset</button>
+                            <i class="bi bi-play-fill fs-4"></i>
+                            <span class="fs-4 p-2">Run</span>
+                        </button>
+                        <button id="save-button" class="btn btn-secondary">
+                            <i class="bi bi-save fs-4"></i>
+                            <span class="fs-4 p-2">Save</span>
+                        </button>
+                        <button id="copy-button" class="btn btn-secondary">
+                            <i class="bi bi-clipboard fs-4"></i>
+                            <span class="fs-4 p-2">Copy</span>
+                        </button>
+                        <button id="reset-button" class="btn btn-danger glyphicon glyphicon-stop">
+                            <i class="bi bi-arrow-clockwise fs-4"></i>
+                            <span class="fs-4 p-2">Reset</span>
+                        </button>
                     </div>
                     <div class="d-flex gap-2">
                         <!-- PHP Examples Selector-->
@@ -147,7 +158,10 @@
                             <option value="json">JSON Example</option>
                             <option value="stdout_stderr_return">Output Types</option>
                         </select>
-                        <button id="load-file-button" class="btn btn-secondary">📂 Load File</button>
+                        <button id="load-file-button" class="btn btn-secondary">
+                            <i class="bi bi-folder fs-4"></i>
+                            <span class="fs-4 p-2">Load File</span>
+                        </button>
                         <!-- Editor Selector -->
                         <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;">
                             <option value="monaco">Monaco</option>
