@@ -4,7 +4,7 @@
 
 This repository provides a streamlined development environment for building and deploying the PHP-WASM module.
 
-It builds upon Derick Rethan's [php-wasm-builder](https://github.com/derickr/php-wasm-builder),
+It builds upon Derick Rethans [php-wasm-builder](https://github.com/derickr/php-wasm-builder),
 using its Dockerfile and `phpw.c` source file as a foundation.
 From there, I made extensive modifications to enhance flexibility, efficiency, and automation.
 

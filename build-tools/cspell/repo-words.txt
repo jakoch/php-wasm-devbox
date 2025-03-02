@@ -7,5 +7,5 @@ monokai
 phpinfo
 phpw
 Emscripten
-Rethan's
+Rethans
 Bluchet
