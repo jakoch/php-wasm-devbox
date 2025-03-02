@@ -27,14 +27,19 @@ if (!isset($_GET['file'])) {
 // accept only filename
 $example = basename($_GET['file']);
 
-// disallow directory traversal
-if (strpos($example, '..') !== false) {
-    exit_with_statuscode("Forbidden.", 403);
-}
+// build accept list of files
+// 1. get all files in the examples directory using scandir
+// 2. filter out the current and parent directory (dots) and the current file
+// 3. remove the .php extension from the files
+$reduced_file_set = array_diff(scandir(__DIR__), ['.', '..', '_get_file.php']);
+$accepted_files = array_map(
+    fn($file) => str_replace('.php', '', $file),
+    $reduced_file_set
+);
 
-// disallow PHP extension, only file basenames are allowed
-if (strpos($example, '.php') !== false) {
-    exit_with_statuscode("Forbidden.", 403);
+// now check if the requested file is in the list of accepted files
+if (!in_array($example, $accepted_files)) {
+    exit_with_statuscode("File not found.", 404);
 }
 
 // file must be in the examples directory, resolve via realpath
