@@ -20,18 +20,21 @@
  * const php = new PHP();
  * const result = await php.runPHP(code, php_version);
  * console.log(result.output);
+ * console.log(result.output_stderr);
  * console.log(result.version);
  * console.log(result.executionTime);
  */
 class PHP {
-    #buffer = [];
+    #buffer_stdout = [];
+    #buffer_stderr = [];
     #runPhp = null;
     #version = '';
 
     constructor() {
         // Initialize static properties
-        if (!PHP.buffer) {
-            PHP.buffer = [];
+        if (!PHP.buffer_stdout) {
+            PHP.buffer_stdout = [];
+            PHP.buffer_stderr = [];
             PHP.runPhp = null;
             PHP.version = '';
         }
@@ -50,13 +53,13 @@ class PHP {
         const phpModuleOptions = {
             print: (data) => {
                 if (!data) return
-                if (PHP.buffer.length) PHP.buffer.push('\n');
-                PHP.buffer.push(data);
+                if (PHP.buffer_stdout.length) PHP.buffer_stdout.push('\n');
+                PHP.buffer_stdout.push(data);
             },
             printErr: (data) => {
                 if (!data) return
-                if (PHP.buffer.length) PHP.buffer.push('\n');
-                PHP.buffer.push(data);
+                if (PHP.buffer_stderr.length) PHP.buffer_stderr.push('\n');
+                PHP.buffer_stderr.push(data);
             }
         };
 
@@ -78,7 +81,9 @@ class PHP {
             throw new Error("Invalid PHP version!");
         }
 
-        PHP.buffer = []; // clear buffer
+        // clear buffers
+        PHP.buffer_stdout = [];
+        PHP.buffer_stderr = [];
 
         try {
             const runPhp = await this.loadWasmModule(php_version);
@@ -94,7 +99,8 @@ class PHP {
 
             const elapsedTime = timer.stop().totalTime;
             return {
-                output: PHP.buffer.join(''),
+                output: PHP.buffer_stdout.join(''), // stdout
+                output_error: PHP.buffer_stderr.join(''), // stderr
                 version: PHP.version,
                 executionTime: timer.formatTime(elapsedTime)
             };
@@ -132,12 +138,6 @@ class CodeEditor {
     async init() {
         await this.switchEditor(this.#currentEditor);
     }
-
-    /*async createEditor() {
-        const editor = new CodeEditor();
-        await editor.init();
-        return editor;
-    }*/
 
     getEditorElement() {
         const editor = document.getElementById("editor");
@@ -302,22 +302,28 @@ const uiElements = {
         return phpVersionDropdown.value;
     },
     get output() {
-        const outputElement = document.getElementById("output");
+        const outputElement = document.getElementById("standard-output");
         if (outputElement) {
             return outputElement.textContent;
         }
         return "";
     },
     set output(value) {
-        const outputElement = document.getElementById("output");
+        const outputElement = document.getElementById("standard-output");
         if (outputElement) {
             outputElement.textContent = value;
         }
     },
     set outputHtml(value) {
-        const outputElement = document.getElementById("output");
+        const outputElement = document.getElementById("standard-output");
         if (outputElement) {
             outputElement.innerHTML = value;
+        }
+    },
+    set output_error(value) {
+        const outputElement = document.getElementById("standard-error-output");
+        if (outputElement) {
+            outputElement.textContent = value || "No Errors!";
         }
     },
     set phpVersionDisplay(value) {
@@ -364,6 +370,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     runButton.addEventListener("click", async () => {
         const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
         uiElements.output = result.output;
+        uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
     });
@@ -395,6 +402,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     resetButton.addEventListener("click", () => {
         editor.setContent("<?php\n\necho 'Hello, World!';\n");
         uiElements.output = "Ready!";
+        uiElements.output_error = "No Errors!";
     });
 
     // editor switcher
@@ -406,6 +414,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     phpVersionDropdown.addEventListener("change", async (event) => {
         const result = await php.runPHP(editor.getContent(), event.target.value);
         uiElements.output = result.output;
+        uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
     });
