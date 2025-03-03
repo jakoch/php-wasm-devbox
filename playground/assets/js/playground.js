@@ -326,6 +326,19 @@ const uiElements = {
             outputElement.textContent = value || "No Errors!";
         }
     },
+    get isOutputModeHtml() {
+        const outputModeCheckbox = document.getElementById("output-mode-switcher");
+        if(outputModeCheckbox?.checked) {
+            return true;
+        }
+        return false;
+    },
+    set outputModeHtml(value) {
+        const outputModeCheckbox = document.getElementById("output-mode-switcher");
+        if(outputModeCheckbox) {
+            outputModeCheckbox.checked = value;
+        }
+    },
     set phpVersionDisplay(value) {
         const phpVersionElement = document.getElementById("php-version");
         if (phpVersionElement) {
@@ -369,7 +382,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const runButton = document.getElementById("run-button");
     runButton.addEventListener("click", async () => {
         const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
-        uiElements.output = result.output;
+        if(uiElements.isOutputModeHtml) {
+            uiElements.outputHtml = result.output;
+        } else {
+            uiElements.output = result.output;
+        }
         uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
@@ -413,7 +430,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const phpVersionDropdown = document.getElementById("php-version-switcher");
     phpVersionDropdown.addEventListener("change", async (event) => {
         const result = await php.runPHP(editor.getContent(), event.target.value);
-        uiElements.output = result.output;
+        if(uiElements.isOutputModeHtml) {
+            uiElements.outputHtml = result.output;
+        } else {
+            uiElements.output = result.output;
+        }
         uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
@@ -423,6 +444,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const phpExampleDropdown = document.getElementById("php-example-switcher");
     phpExampleDropdown.addEventListener("change", async (event) => {
         const example = event.target.value;
+        if(example === "phpinfo") {
+            uiElements.outputModeHtml = true;
+        } else {
+            uiElements.outputModeHtml = false;
+        }
         const response = await fetch(`examples/_get_file.php?file=${example}`);
         const content = await response.text();
         editor.setContent(content);

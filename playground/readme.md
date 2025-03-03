@@ -36,6 +36,7 @@
 
 - [x] Dropdown for selecting example code snippets to prefill the editor
   - [x] Add some examples, e.g. `playground/examples/hello_world.php`
+  - [x] set content mode HTML for phpinfo example automatically, raw for all others
 - [x] Save button to save editor content as a PHP file
 
 ## Ideas
