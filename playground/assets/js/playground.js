@@ -419,7 +419,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     resetButton.addEventListener("click", () => {
         editor.setContent("<?php\n\necho 'Hello, World!';\n");
         uiElements.output = "Ready!";
+        uiElements.outputModeHtml = false; // reset to raw output
         uiElements.output_error = "No Errors!";
+        uiElements.phpVersionDisplay = "0.0.0";
+        uiElements.perfDataDisplay = "0s";
     });
 
     // editor switcher
