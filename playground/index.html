@@ -46,31 +46,42 @@
     </noscript>
     <!-- Header Navbar -->
     <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow border-bottom border-dark">
-        <nav class="container-xxl bd-gutter flex-wrap flex-lg-nowrap">
-            <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Module Playground">PHP-WASM</a>
+        <nav class="container-fluid bd-gutter flex-wrap flex-lg-nowrap ms-5">
+            <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Playground">
+                <i class="bi bi-filetype-php fs-3 me-2"></i>PHP-WASM Playground
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bdNavbar" aria-controls="bdNavbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse flex-grow-1" id="bdNavbar">
-                <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-lg-0">
-                    <li class="nav-item"></li>
-                        <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="#">
-                            <i class="bi bi-filetype-php fs-3 me-2"></i>Playground
-                        </a>
+            <div class="collapse navbar-collapse justify-content-start" id="bdNavbar">
+                <!-- Left section -->
+                <ul class="navbar-nav me-auto bd-navbar-nav pt-2 py-lg-0 ms-5">
+                    <li class="nav-item">
+                    <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="#">
+                        <i class="bi bi-pencil-square fs-3 me-2"></i>Editor
+                    </a>
                     </li>
                     <li class="nav-item">
                         <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="#">
                             <i class="bi bi-question-octagon fs-3 me-2"></i>Help
                         </a>
                     </li>
+                </ul>
+                <!-- Right section -->
+                <ul class="navbar-nav ms-auto bd-navbar-nav pt-2 py-lg-0 me-5">
                     <li class="nav-item">
-                        <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox/issues">
-                            <i class="bi bi-github fs-3 me-2"></i>Report Issues
+                        <a id="issues-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox/issues">
+                            <i class="bi bi-github fs-3 me-2"></i>Report Issue
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox">
+                        <a id="star-github-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox">
                             <i class="bi bi-star fs-3 me-2"></i>Star on GitHub
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="donate-github-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/sponsors/jakoch">
+                            <i class="bi bi-currency-dollar fs-3 me-2"></i>Donate
                         </a>
                     </li>
                 </ul>
