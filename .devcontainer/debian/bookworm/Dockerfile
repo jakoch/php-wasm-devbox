@@ -12,7 +12,7 @@ FROM debian:bookworm-slim AS build-stage
 # | ARGS                        |
 # +-----------------------------+
 
-ARG PHP_VERSION=8.4.3
+ARG PHP_VERSION=8.4.8
 ARG ONIGURUMA_VERSION=6.9.10
 ARG LIBXML_VERSION=2.13.5
 ARG EMSCRIPTEN_VERSION=4.0.4
