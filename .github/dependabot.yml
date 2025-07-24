@@ -23,7 +23,7 @@ updates:
         update-types: ["version-update:semver-patch"]
   # Enable automatic version updates for Dockerfile
   - package-ecosystem: "docker"
-    directory: "./devcontainer/debian/bookworm"
+    directory: "/.devcontainer/debian/bookworm"
     schedule:
       interval: "weekly"
     commit-message:
