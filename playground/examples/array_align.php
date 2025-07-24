@@ -32,7 +32,7 @@ function filter_by_length($carry, $item) {
 }
 
 // Find the length of the longest key using array_reduce
-// array_recude takes an array, a comparison function and an initial value
+// array_reduce takes an array, a comparison function and an initial value
 // it will compare each element of the array with the initial value and return the longest one.
 // Then it will compare the longest one with the next element and so on,
 // until all elements are compared and the longest one is returned.
