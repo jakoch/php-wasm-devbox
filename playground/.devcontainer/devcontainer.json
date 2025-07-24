@@ -1,0 +1,25 @@
+{
+	"name": "PHP + Node.js Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/php:latest",
+    // config settings you would have in ".vscode/settings.json"
+    "customizations": {
+        "vscode": {
+          // Add the IDs of extensions you want installed when the container is created.
+          "extensions": [
+            // editorconfig
+            "EditorConfig.EditorConfig",
+            // TS
+            "ms-vscode.vscode-typescript-next",
+            // PHP
+            "bmewburn.vscode-intelephense-client"
+          ]
+        },
+        "settings": {
+            "extensions.ignoreRecommendations": true
+        }
+    },
+    //"postCreateCommand": "composer install && npm install",
+    "postCreateCommand": "npm install",
+    "forwardPorts": [8080, 3000],
+    "remoteUser": "vscode"
+}
