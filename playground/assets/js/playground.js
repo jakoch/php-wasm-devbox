@@ -392,13 +392,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         uiElements.perfDataDisplay = result.executionTime;
     });
 
-    // continous run checkbox
-    const continousRunCheckbox = document.getElementById("run-continous");
+    // auto run checkbox
+    const autoRunCheckbox = document.getElementById("auto-run");
     let runInterval = null; // debounce the run interval (do not run too frequently)
-    continousRunCheckbox.addEventListener("click", () => {
-        if (continousRunCheckbox.checked) {
+    autoRunCheckbox.addEventListener("click", () => {
+        if (autoRunCheckbox.checked) {
             runInterval = setInterval(async () => {
-                console.log("Running PHP code continously ...");
+                console.log("Running PHP code continuously ...");
                 const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
                 if (uiElements.isOutputModeHtml) {
                     uiElements.outputHtml = result.output;

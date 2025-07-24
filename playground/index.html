@@ -1,315 +1,352 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHP-WASM Playground</title>
-    <meta name="description" content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
-    <!-- Open Graph -->
-    <!--<meta property="og:url" content="https://..." />-->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="PHP-WASM Playground" />
-    <meta property="og:description" content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
-    <meta property="og:site_name" content="PHP Playground" />
-    <!--<meta property="og:image" content="https://.../logo.png" />-->
-    <!-- Twitter -->
-    <meta name=”twitter:card” content="summary_large_image" />
-    <meta name=”twitter:creator” content="@jens-andre-koch" />
-    <meta name=”twitter:title” content="PHP-WASM Playground" />
-    <meta name=”twitter:description” content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
-    <!--<meta name=”twitter:image” content="https://.../logo.png" />-->
-    <link rel="shortcut icon" href="assets/favicon.ico" />
-    <!-- Style -->
-    <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
-          integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg=="
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-          integrity="sha512-dPXYcDub/aeb08c63jRq/k6GaKccl256JQy/AnOq7CAnEZ9FzSL9wSbcZkMp4R26vBsMLFYH4kQ67/bbV8XaCQ=="
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- CodeMirror Style & Theme -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
-          integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css"
-          integrity="sha512-R6PH4vSzF2Yxjdvb2p2FA06yWul+U0PDDav4b/od/oXf9Iw37zl10plvwOXelrjV2Ai7Eo3vyHeyFUjhXdBCVQ=="
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<body style="background-color: var(--bs-gray-800); color: var(--bs-white);">
-    <!-- NoScript Warning -->
-    <noscript>
-        <div class="alert alert-danger text-center" role="alert">
-            <p>This application requires JavaScript to be enabled.</p>
-            <p>Please enable JavaScript in your browser settings and reload the page.</p>
-        </div>
-    </noscript>
-    <!-- Header Navbar -->
-    <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow border-bottom border-dark">
-        <nav class="container-fluid bd-gutter flex-wrap flex-lg-nowrap ms-5">
-            <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Playground">
-                <i class="bi bi-filetype-php fs-3 me-2"></i>PHP-WASM Playground
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bdNavbar" aria-controls="bdNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-start" id="bdNavbar">
-                <!-- Left section -->
-                <ul class="navbar-nav me-auto bd-navbar-nav pt-2 py-lg-0 ms-5">
-                    <li class="nav-item">
-                    <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="#">
-                        <i class="bi bi-pencil-square fs-3 me-2"></i>Editor
-                    </a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="#">
-                            <i class="bi bi-question-octagon fs-3 me-2"></i>Help
-                        </a>
-                    </li>
-                </ul>
-                <!-- Right section -->
-                <ul class="navbar-nav ms-auto bd-navbar-nav pt-2 py-lg-0 me-5">
-                    <li class="nav-item">
-                        <a id="issues-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox/issues">
-                            <i class="bi bi-github fs-3 me-2"></i>Report Issue
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="star-github-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox">
-                            <i class="bi bi-star fs-3 me-2"></i>Star on GitHub
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="donate-github-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/sponsors/jakoch">
-                            <i class="bi bi-currency-dollar fs-3 me-2"></i>Donate
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    </header>
 
-    <div id="main-container" class="m-4 p-4">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHP-WASM Playground</title>
+  <meta name="description" content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
+  <!-- Open Graph -->
+  <!--<meta property="og:url" content="https://..." />-->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="PHP-WASM Playground" />
+  <meta property="og:description"
+    content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
+  <meta property="og:site_name" content="PHP Playground" />
+  <!--<meta property="og:image" content="https://.../logo.png" />-->
+  <!-- Twitter -->
+  <meta name=”twitter:card” content="summary_large_image" />
+  <meta name=”twitter:creator” content="@jens-andre-koch" />
+  <meta name=”twitter:title” content="PHP-WASM Playground" />
+  <meta name=”twitter:description”
+    content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
+  <!--<meta name=”twitter:image” content="https://.../logo.png" />-->
+  <link rel="shortcut icon" href="assets/favicon.ico" />
+  <!-- Style -->
+  <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.7/css/bootstrap.min.css"
+    integrity="sha512-fw7f+TcMjTb7bpbLJZlP8g2Y4XcCyFZW8uy8HsRZsH/SwbMw0plKHFHr99DN3l04VsYNwvzicUX/6qurvIxbxw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css"
+    integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- CodeMirror Style with Monokai Theme -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+    integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css"
+    integrity="sha512-R6PH4vSzF2Yxjdvb2p2FA06yWul+U0PDDav4b/od/oXf9Iw37zl10plvwOXelrjV2Ai7Eo3vyHeyFUjhXdBCVQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body style="background-color: var(--bs-gray-800); color: var(--bs-white);">
+  <!-- NoScript Warning -->
+  <noscript>
+    <div class="alert alert-danger text-center" role="alert">
+      <p>This application requires JavaScript to be enabled.</p>
+      <p>Please enable JavaScript in your browser settings and reload the page.</p>
+    </div>
+  </noscript>
+  <!-- Header Navbar -->
+  <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow border-bottom border-dark">
+    <nav class="container-fluid bd-gutter flex-wrap flex-lg-nowrap ms-5">
+      <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Playground">
+        <i class="bi bi-filetype-php fs-3 me-2"></i>PHP-WASM Playground
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bdNavbar"
+        aria-controls="bdNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-start" id="bdNavbar">
+        <!-- Left section -->
+        <ul class="navbar-nav me-auto bd-navbar-nav pt-2 py-lg-0 ms-5">
+          <li class="nav-item">
+            <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="#">
+              <i class="bi bi-pencil-square fs-3 me-2"></i>Editor
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="#">
+              <i class="bi bi-question-octagon fs-3 me-2"></i>Help
+            </a>
+          </li>
+        </ul>
+        <!-- Right section -->
+        <ul class="navbar-nav ms-auto bd-navbar-nav pt-2 py-lg-0 me-5">
+          <li class="nav-item">
+            <a id="issues-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/jakoch/php-wasm-devbox/issues">
+              <i class="bi bi-github fs-3 me-2"></i>Report Issue
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="star-github-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/jakoch/php-wasm-devbox">
+              <i class="bi bi-star fs-3 me-2"></i>Star on GitHub
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="donate-github-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/sponsors/jakoch">
+              <i class="bi bi-currency-dollar fs-3 me-2"></i>Donate
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <div id="main-container" class="m-4 p-4">
 
     <!-- Help -->
     <div id="help-container" class="card bg-dark h-100 border border-dark bg-dark d-none pb-4 mb-4 fs-4">
-        <div id="help-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-question-octagon fs-4"></i>
-                <span class="fw-bold fs-4 ps-2">Help</span>
-            </div>
+      <div id="help-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-question-octagon fs-4"></i>
+          <span class="fw-bold fs-4 ps-2">Help</span>
         </div>
-        <div id="help-body" class="card-body text-white">
-            <h4>Welcome to the PHP-WASM Playground!</h4>
-            <p>The PHP-WASM Playground is a simple in-browser editor using the PHP-WASM module. It is not a fully featured IDE.</p>
-            <p>The PHP-WASM module is the PHP interpreter compiled to WebAssembly using Emscripten. It allows you to run PHP code directly in the browser.</p>
-            <h4>Who is this for?</h4>
-            <p>This app is for anyone that wants to run PHP snippets or inspect the inner workings of the PHP VM.</p>
-            <p>It has been designed with the idea of an in-browser testing ground for small snippets against multiple PHP versions in mind.</p>
-            <p>The inspiration is of course the well-known 3v4l.org playground project, where you can do the same but against hosted PHP versions.</p>
-            <p>Here everything runs in the browser, and once the web application is loaded, it will even work without internet connection.</p>
-            <h4>Usage</h4>
-            <p>Write your PHP code in the editor on the left and click the Run button to execute it. You will see the result in the output panel on the right.</p>
-            <p>Keep in mind to start with the usual PHP opening tag: <code>&lt;?php</code></p>
-            <p>For issues related to the PHP-WASM module or this playground, please visit:
-              <i class="bi bi-github fs-3"></i>
-              <a href="https://github.com/jakoch/php-wasm-devbox/issues">github.com/jakoch/php-wasm-devbox/issues</a>
-            </p>
-            <h4><u>Interactions</u></h4>
-            <div class="row">
-                <div class="col-3 fw-bold">Run Button</div>
-                <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">Save Button</div>
-                <div class="col-9">Saves the PHP code to file. The file name format is "index-YYYYMMDD-HHMM.php".</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">Copy Button</div>
-                <div class="col-9">Copies the content of the code editor to the clipboard.</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">Reset Button</div>
-                <div class="col-9">Resets the PHP code editor to a basic hello world example.</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">Editor Dropdown</div>
-                <div class="col-9">You can switch between CodeMirror and Monaco editors using the editor type selector.</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">PHP Version Dropdown</div>
-                <div class="col-9">You can switch the PHP Version using the PHP version selector.</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">Output Mode Toggle</div>
-                <div class="col-9">You can toggle the output mode and select between raw text and HTML rendering.</div>
-            </div>
-            <h4><u>Status Displays</u></h4>
-            <div class="row">
-                <div class="col-3 fw-bold">PHP Version Display</div>
-                <div class="col-9">Shows the PHP version used for executing your PHP code.</div>
-            </div>
-            <div class="row">
-                <div class="col-3 fw-bold">Performance Display</div>
-                <div class="col-9">Shows how long it took to run your PHP code.</div>
-            </div>
+      </div>
+      <div id="help-body" class="card-body text-white">
+        <h4>Welcome to the PHP-WASM Playground!</h4>
+        <p>The PHP-WASM Playground is a simple in-browser editor using the PHP-WASM module. It is not a fully featured
+          IDE.</p>
+        <p>The PHP-WASM module is the PHP interpreter compiled to WebAssembly using Emscripten. It allows you to run PHP
+          code directly in the browser.</p>
+        <h4>Who is this for?</h4>
+        <p>This app is for anyone that wants to run PHP snippets or inspect the inner workings of the PHP VM.</p>
+        <p>It has been designed with the idea of an in-browser testing ground for small snippets against multiple PHP
+          versions in mind.</p>
+        <p>The inspiration is of course the well-known 3v4l.org playground project, where you can do the same but
+          against hosted PHP versions.</p>
+        <p>Here everything runs in the browser, and once the web application is loaded, it will even work without
+          internet connection.</p>
+        <h4>Usage</h4>
+        <p>Write your PHP code in the editor on the left and click the Run button to execute it. You will see the result
+          in the output panel on the right.</p>
+        <p>Keep in mind to start with the usual PHP opening tag: <code>&lt;?php</code></p>
+        <p>For issues related to the PHP-WASM module or this playground, please visit:
+          <i class="bi bi-github fs-3"></i>
+          <a href="https://github.com/jakoch/php-wasm-devbox/issues">github.com/jakoch/php-wasm-devbox/issues</a>
+        </p>
+        <h4><u>Interactions</u></h4>
+        <div class="row">
+          <div class="col-3 fw-bold">Run Button</div>
+          <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.
+          </div>
         </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Save Button</div>
+          <div class="col-9">Saves the PHP code to file. The file name format is "index-YYYYMMDD-HHMM.php".</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Copy Button</div>
+          <div class="col-9">Copies the content of the code editor to the clipboard.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Reset Button</div>
+          <div class="col-9">Resets the PHP code editor to a basic hello world example.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Editor Dropdown</div>
+          <div class="col-9">You can switch between CodeMirror and Monaco editors using the editor type selector.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Version Dropdown</div>
+          <div class="col-9">You can switch the PHP Version using the PHP version selector.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Output Mode Toggle</div>
+          <div class="col-9">You can toggle the output mode and select between raw text and HTML rendering.</div>
+        </div>
+        <h4><u>Status Displays</u></h4>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Version Display</div>
+          <div class="col-9">Shows the PHP version used for executing your PHP code.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Performance Display</div>
+          <div class="col-9">Shows how long it took to run your PHP code.</div>
+        </div>
+      </div>
     </div> <!-- /#help-container -->
 
     <!-- Editor -->
     <div id="editor-container" class="row">
-        <!-- Left Side (Editor) -->
-        <div id="left" class="col-6">
-            <div id="editor-wrapper" class="card bg-dark h-100">
-                <div id="editor-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="height: 60px;">
-                    <!-- Panel Name -->
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-filetype-php fs-3"></i>
-                        <span class="fw-bold fs-4 p-2">Code Editor</span>
-                    </div>
-                    <!-- Editor Controls -->
-                    <div class="d-flex align-items-center gap-2">
-                        <button id="run-button" class="btn btn-success">
-                            <i class="bi bi-play-fill fs-4"></i>
-                            <span class="fs-4 p-2">Run</span>
-                        </button>
-                        <div class="form-check form-switch text-white ms-3">
-                            <input class="form-check-input" type="checkbox" id="run-continous">
-                            <label class="form-check-label" for="run-continous">Run Continous</label>
-                        </div>
-                        <button id="save-button" class="btn btn-secondary">
-                            <i class="bi bi-save fs-4"></i>
-                            <span class="fs-4 p-2">Save</span>
-                        </button>
-                        <button id="copy-button" class="btn btn-secondary">
-                            <i class="bi bi-clipboard fs-4"></i>
-                            <span class="fs-4 p-2">Copy</span>
-                        </button>
-                        <button id="reset-button" class="btn btn-danger glyphicon glyphicon-stop">
-                            <i class="bi bi-arrow-clockwise fs-4"></i>
-                            <span class="fs-4 p-2">Reset</span>
-                        </button>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <!-- PHP Examples Selector-->
-                        <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;">
-                            <option value="hello_world">Hello World</option>
-                            <option value="phpinfo">PHP Info</option>
-                            <option value="extensions">Show Loaded Extensions</option>
-                            <option value="array_align">Array Align Example</option>
-                            <option value="json">JSON Example</option>
-                            <option value="stdout_stderr_return">Output Types</option>
-                        </select>
-                        <button id="load-file-button" class="btn btn-secondary">
-                            <i class="bi bi-folder fs-4"></i>
-                            <span class="fs-4 p-2">Load File</span>
-                        </button>
-                        <!-- Editor Selector -->
-                        <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;">
-                            <option value="monaco">Monaco</option>
-                            <option value="codemirror">CodeMirror</option>
-                        </select>
-                        <!-- PHP Version Selector -->
-                        <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;">
-                            <option value="8.4.3">PHP 8.4.3</option>
-                            <option value="8.4.0">PHP 8.4.0</option>
-                        </select>
-                    </div>
+      <!-- Left Side (Editor) -->
+      <div id="left" class="col-6">
+        <div id="editor-wrapper" class="card bg-dark h-100">
+          <div id="editor-header" class="card-header bg-primary text-white" style="overflow: hidden;">
+            <div class="container-fluid py-2">
+              <!-- Row 1: Title & Controls -->
+              <div class="row align-items-center">
+                <!-- Left: Title (Panel Name)-->
+                <div class="col-md-4 d-flex align-items-center mb-2 mb-md-0">
+                  <i class="bi bi-filetype-php fs-3"></i>
+                  <span class="fw-bold fs-4 ps-2">Code Editor</span>
                 </div>
-                <div id="editor-body" class="card-body">
-                    <!-- Editor -->
-                    <textarea id="editor" class="form-control" rows="15">
+
+                <!-- Right: Controls -->
+                <div class="col-md-8 d-flex flex-wrap gap-2 justify-content-md-end">
+                  <button id="run-button" class="btn btn-success custom-btn-size" title="Run the PHP script">
+                    <i class="bi bi-play-fill"></i>
+                    <span class="ps-2">Run</span>
+                  </button>
+
+                  <div class="form-check form-switch text-white d-flex align-items-center">
+                    <input class="form-check-input bg-secondary" type="checkbox" id="auto-run" title="Toggle Automatic Run">
+                    <label class="form-check-label ps-1" for="auto-run">Auto Run</label>
+                  </div>
+
+                  <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;" title="Select PHP version">
+                    <option value="8.4.3">PHP 8.4.3</option>
+                    <option value="8.4.0">PHP 8.4.0</option>
+                  </select>
+
+                  <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;" title="Select editor type">
+                    <option value="monaco">Monaco</option>
+                    <option value="codemirror">CodeMirror</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Row 2: Selectors aligned right -->
+              <div class="row mt-3">
+                <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+
+                  <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;" title="Select PHP example">
+                    <option value="hello_world">Hello World</option>
+                    <option value="phpinfo">PHP Info</option>
+                    <option value="extensions">Show Loaded Extensions</option>
+                    <option value="array_align">Array Align Example</option>
+                    <option value="json">JSON Example</option>
+                    <option value="stdout_stderr_return">Output Types</option>
+                  </select>
+
+                  <button id="load-file-button" class="btn btn-secondary" title="Load a file into the editor">
+                    <i class="bi bi-folder"></i>
+                    <span class="ps-2">Load File</span>
+                  </button>
+
+                  <button id="save-button" class="btn btn-secondary custom-btn-size" title="Save the current code to file">
+                    <i class="bi bi-save"></i>
+                    <span class="ps-2">Save</span>
+                  </button>
+                  <button id="copy-button" class="btn btn-secondary custom-btn-size" title="Copy the current code to clipboard">
+                    <i class="bi bi-clipboard"></i>
+                    <span class="ps-2">Copy</span>
+                  </button>
+                  <button id="reset-button" class="btn btn-danger custom-btn-size" title="Reset the editor to a basic example">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <span class="ps-2">Reset</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="editor-body" class="card-body">
+            <!-- Editor -->
+            <textarea id="editor" class="form-control" rows="15">
 &lt;?php
 
 // Display PHP version and loaded extensions
 echo 'PHP Version: ' . phpversion() . "\n";
 echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
 </textarea>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Right Side (Output) -->
-        <div id="right" class="col-6">
-            <div id="output-panels">
+      <!-- Right Side (Output) -->
+      <div id="right" class="col-6">
+        <div id="output-panels">
 
-                <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 200px;">
+          <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 200px;">
 
-                    <div id="standard-output-header" class="card-header bg-success text-white d-flex justify-content-between align-items-center" style="height: 60px;">
-                        <!-- Panel Name -->
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-code-slash fs-3"></i>
-                            <span class="fw-bold fs-4 p-2">Output</span>
-                        </div>
-                        <!-- Toggle Output Type: raw text or HTML -->
-                        <div class="form-check form-switch text-white ms-3">
-                            <input class="form-check-input" type="checkbox" id="output-mode-switcher">
-                            <label class="form-check-label" for="output-mode-switcher">Toggle Output Type (off: Raw | on: HTML)</label>
-                        </div>
-                        <div class="align-items-start flex-column">
-                            <!-- PHP Version Display -->
-                            <div id="php-version-display" class="align-items-right gap-2">
-                                <span id="php-name" class="text-white-50">PHP Version:</span>
-                                <span id="php-version" class="fw-bold">0.0.0</span>
-                            </div>
-                            <!-- Performance Display -->
-                            <div id="performance-display" class="align-items-right gap-2">
-                                <span id="perf-name" class="text-white-50">Performance:</span>
-                                <span id="perf-data" class="fw-bold">0ms</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="standard-output-body" class="card-body">
-                        <pre id="standard-output" class="p-2 border border-dark rounded pre-direct text-white">Ready!</pre>
-                    </div>
-                </div> <!-- /#standard-output -->
+            <div id="standard-output-header"
+              class="card-header bg-success text-white d-flex justify-content-between align-items-center"
+              style="height: 60px;">
+              <!-- Panel Name -->
+              <div class="d-flex align-items-center">
+                <i class="bi bi-code-slash fs-3"></i>
+                <span class="fw-bold fs-4 p-2">Output</span>
+              </div>
+              <!-- Toggle Output Type: raw text or HTML -->
+              <div class="form-check form-switch text-white ms-3">
+                <input class="form-check-input" type="checkbox" id="output-mode-switcher">
+                <label class="form-check-label" for="output-mode-switcher">Toggle Output Type (off: Raw | on:
+                  HTML)</label>
+              </div>
+              <div class="align-items-start flex-column">
+                <!-- PHP Version Display -->
+                <div id="php-version-display" class="align-items-right gap-2">
+                  <span id="php-name" class="text-white-50">PHP Version:</span>
+                  <span id="php-version" class="fw-bold">0.0.0</span>
+                </div>
+                <!-- Performance Display -->
+                <div id="performance-display" class="align-items-right gap-2">
+                  <span id="perf-name" class="text-white-50">Performance:</span>
+                  <span id="perf-data" class="fw-bold">0ms</span>
+                </div>
+              </div>
+            </div>
+            <div id="standard-output-body" class="card-body">
+              <pre id="standard-output" class="p-2 border border-dark rounded pre-direct text-white">Ready!</pre>
+            </div>
+          </div> <!-- /#standard-output -->
 
-                <div class="m-2"></div>
+          <div class="m-2"></div>
 
-                <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 200px;">
-                    <!-- Standard Error Output -->
-                    <div id="standard-error-output-header" class="card-header bg-secondary text-white d-flex justify-content-between align-items-center" style="height: 60px;">
-                        <!-- Panel Name -->
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-code-slash fs-3"></i>
-                            <span class="fw-bold fs-4 p-2">Errors</span>
-                        </div>
-                    </div>
-                    <div id="standard-error-output-body" class="card-body">
-                        <pre id="standard-error-output" class="p-2 border border-dark rounded pre-direct text-white">No Errors!</pre>
-                    </div>
-                </div> <!-- /#standard-error-output -->
+          <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 200px;">
+            <!-- Standard Error Output -->
+            <div id="standard-error-output-header"
+              class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
+              style="height: 60px;">
+              <!-- Panel Name -->
+              <div class="d-flex align-items-center">
+                <i class="bi bi-code-slash fs-3"></i>
+                <span class="fw-bold fs-4 p-2">Errors</span>
+              </div>
+            </div>
+            <div id="standard-error-output-body" class="card-body">
+              <pre id="standard-error-output"
+                class="p-2 border border-dark rounded pre-direct text-white">No Errors!</pre>
+            </div>
+          </div> <!-- /#standard-error-output -->
 
-            </div> <!-- /#output-panels -->
-        </div> <!-- /#right -->
+        </div> <!-- /#output-panels -->
+      </div> <!-- /#right -->
     </div> <!-- /#editor-container -->
 
     <!-- Footer -->
     <footer class="text-center text-white-50 py-3">
-        <div>
-            PHP-WASM Playground v0.3.0<br>
-            <a class="text-white-50" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a><br>
-            Copyright (c) 2025 Jens A. Koch
-        </div>
+      <div>
+        PHP-WASM Playground v0.3.0<br>
+        <a class="text-white-50" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a><br>
+        Copyright (c) 2025 Jens A. Koch
+      </div>
     </footer>
 
-    </div> <!-- /#main-container -->
+  </div> <!-- /#main-container -->
 
-    <!-- CodeMirror Editor & Mode -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
-            integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/php/php.min.js"
-            integrity="sha512-jZGz5n9AVTuQGhKTL0QzOm6bxxIQjaSbins+vD3OIdI7mtnmYE6h/L+UBGIp/SssLggbkxRzp9XkQNA4AyjFBw=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Monaco Editor -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"
-            integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Playground Scripts -->
-    <script src="assets/js/timer.js"></script>
-    <script type="module" src="assets/js/playground.js"></script>
+  <!-- CodeMirror Editor & Mode -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+    integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/php/php.min.js"
+    integrity="sha512-jZGz5n9AVTuQGhKTL0QzOm6bxxIQjaSbins+vD3OIdI7mtnmYE6h/L+UBGIp/SssLggbkxRzp9XkQNA4AyjFBw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Monaco Editor -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"
+    integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Playground Scripts -->
+  <script src="assets/js/timer.js"></script>
+  <script type="module" src="assets/js/playground.js"></script>
 </body>
+
 </html>

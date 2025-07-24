@@ -1,0 +1,5 @@
+# Dependency directory
+node_modules
+
+# Playwright test results
+test-results

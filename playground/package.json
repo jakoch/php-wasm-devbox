@@ -1,0 +1,43 @@
+{
+  "name": "php-wasm-playground",
+  "version": "0.1.0",
+  "description": "PHP-WASM Playground is a in-browser PHP playground that uses WebAssembly to run PHP code in the browser.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Jens A. Koch",
+  "homepage": "https://github.com/jakoch/php-wasm-devbox",
+  "main": "index.js",
+  "scripts": {
+    "format:check": "pnpm exec biome format",
+    "format:write": "pnpm exec biome format --write",
+    "pnpm:audit": "pnpm audit --audit-level=high",
+    "pnpm:outdated": "pnpm outdated",
+    "pnpm:clean_install": "pnpm install --frozen-lockfile",
+    "pnpm:install": "pnpm install",
+    "pnpm:update": "pnpm update",
+    "test:e2e": "playwright test",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "ci:test:e2e": "CI=1 DEBUG=pw:browser npm run test:e2e 2>/dev/null"
+  },
+  "devDependencies": {
+    "biome": "^0.3.3",
+    "playwright": "^1.54.1"
+  },
+  "dependencies": {
+    "node": "^23.11.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

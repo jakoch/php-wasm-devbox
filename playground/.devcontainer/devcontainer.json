@@ -19,7 +19,18 @@
         }
     },
     //"postCreateCommand": "composer install && npm install",
-    "postCreateCommand": "npm install",
+    "postCreateCommand": "./setup.sh",
     "forwardPorts": [8080, 3000],
-    "remoteUser": "vscode"
+    //"remoteuser": "vscode",
+    "remoteUser": "root",
+    // connect to local ollama server
+    "containerEnv": {
+      "OLLAMA_HOST": "http://host.docker.internal:11434"
+    },
+    "remoteEnv": {
+      "OLLAMA_HOST": "http://host.docker.internal:11434"
+    },
+    "runArgs": [
+      "--add-host=host.docker.internal:host-gateway"
+    ]
 }
