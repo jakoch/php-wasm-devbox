@@ -87,8 +87,8 @@ class PHP {
 
         try {
             const runPhp = await this.loadWasmModule(php_version);
-            const script = code;
             const timer = new Timer("PHP Script");
+            const script = code;
 
             await new Promise((resolve) => {
                 runPhp(script);
@@ -390,6 +390,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
+    });
+
+    // continous run checkbox
+    const continousRunCheckbox = document.getElementById("run-continous");
+    let runInterval = null; // debounce the run interval (do not run too frequently)
+    continousRunCheckbox.addEventListener("click", () => {
+        if (continousRunCheckbox.checked) {
+            runInterval = setInterval(async () => {
+                console.log("Running PHP code continously ...");
+                const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
+                if (uiElements.isOutputModeHtml) {
+                    uiElements.outputHtml = result.output;
+                } else {
+                    uiElements.output = result.output;
+                }
+                uiElements.output_error = result.output_error;
+                uiElements.phpVersionDisplay = result.version;
+                uiElements.perfDataDisplay = result.executionTime;
+            }, 2000);
+        } else {
+            clearInterval(runInterval);
+        }
     });
 
     // save button

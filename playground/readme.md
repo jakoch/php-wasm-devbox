@@ -21,6 +21,10 @@
 - [ ] Automatic insertion of opening PHP tag:
   - [ ] If the user forgets to add `<?php`, prepend it automatically
   - [ ] When the user clears the editor, add `<?php` automatically on line 1
+- [ ] automatic code formatting using tidy?
+- [ ] display Ln:x, Col: y of the cursor in a status bar at the bottom
+- [ ] display Content size in bytes in status bar
+- [ ] allow to decrease/increased font size of editor (small t, big T icons)
 
 ## Todo
 
@@ -51,6 +55,7 @@
 - [ ] Provide two code execution modes:
   - [ ] "Continuous" mode: Live code output preview as you type
   - [x] "Single run" mode: User must click "Run" to execute the code
+  - [ ] if the "Continous Checkbox" is on, hide the run button, else show run button
 - [x] Reset functionality:
   - [x] Clears the editor to a basic Hello World example
   - [ ] ask user for confirmation via dialog box?
