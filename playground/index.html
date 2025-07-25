@@ -179,74 +179,84 @@
       <!-- Left Side (Editor) -->
       <div id="left" class="col-6">
         <div id="editor-wrapper" class="card bg-dark h-100">
-          <div id="editor-header" class="card-header bg-primary text-white" style="overflow: hidden;">
-            <div class="container-fluid py-2">
-              <!-- Row 1: Title & Controls -->
-              <div class="row align-items-center">
-                <!-- Left: Title (Panel Name)-->
-                <div class="col-md-4 d-flex align-items-center mb-2 mb-md-0">
-                  <i class="bi bi-filetype-php fs-3"></i>
-                  <span class="fw-bold fs-4 ps-2">Code Editor</span>
-                </div>
 
-                <!-- Right: Controls -->
-                <div class="col-md-8 d-flex flex-wrap gap-2 justify-content-md-end">
-                  <button id="run-button" class="btn btn-success custom-btn-size" title="Run the PHP script">
-                    <i class="bi bi-play-fill"></i>
-                    <span class="ps-2">Run</span>
-                  </button>
+          <!-- Row 1: Code Editor Controls -->
+          <div id="editor-header-1"
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            style="overflow: hidden; height: 60px;">
 
-                  <div class="form-check form-switch text-white d-flex align-items-center">
-                    <input class="form-check-input bg-secondary" type="checkbox" id="auto-run" title="Toggle Automatic Run">
-                    <label class="form-check-label ps-1" for="auto-run">Auto Run</label>
-                  </div>
-
-                  <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;" title="Select PHP version">
-                    <option value="8.4.3">PHP 8.4.3</option>
-                    <option value="8.4.0">PHP 8.4.0</option>
-                  </select>
-
-                  <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;" title="Select editor type">
-                    <option value="monaco">Monaco</option>
-                    <option value="codemirror">CodeMirror</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Row 2: Selectors aligned right -->
-              <div class="row mt-3">
-                <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
-
-                  <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;" title="Select PHP example">
-                    <option value="hello_world">Hello World</option>
-                    <option value="phpinfo">PHP Info</option>
-                    <option value="extensions">Show Loaded Extensions</option>
-                    <option value="array_align">Array Align Example</option>
-                    <option value="json">JSON Example</option>
-                    <option value="stdout_stderr_return">Output Types</option>
-                  </select>
-
-                  <button id="load-file-button" class="btn btn-secondary" title="Load a file into the editor">
-                    <i class="bi bi-folder"></i>
-                    <span class="ps-2">Load File</span>
-                  </button>
-
-                  <button id="save-button" class="btn btn-secondary custom-btn-size" title="Save the current code to file">
-                    <i class="bi bi-save"></i>
-                    <span class="ps-2">Save</span>
-                  </button>
-                  <button id="copy-button" class="btn btn-secondary custom-btn-size" title="Copy the current code to clipboard">
-                    <i class="bi bi-clipboard"></i>
-                    <span class="ps-2">Copy</span>
-                  </button>
-                  <button id="reset-button" class="btn btn-danger custom-btn-size" title="Reset the editor to a basic example">
-                    <i class="bi bi-arrow-clockwise"></i>
-                    <span class="ps-2">Reset</span>
-                  </button>
-                </div>
-              </div>
+            <!-- Left: Panel Name = Code Editor -->
+            <div class="d-flex align-items-center">
+              <i class="bi bi-filetype-php fs-3"></i>
+              <span class="fw-bold fs-4 ps-2">Code Editor</span>
             </div>
-          </div>
+
+            <!-- Right: Controls -->
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+              <button id="run-button" class="btn btn-success custom-btn-size" title="Run the PHP script">
+                <i class="bi bi-play-fill"></i>
+                <span class="ps-2">Run</span>
+              </button>
+
+              <div class="form-check form-switch text-white d-flex align-items-center">
+                <input class="form-check-input bg-secondary" type="checkbox" id="auto-run" title="Toggle Automatic Run">
+                <label class="form-check-label ps-1" for="auto-run">Auto Run</label>
+              </div>
+
+              <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;"
+                title="Select PHP version">
+                <option value="8.4.3">PHP 8.4.3</option>
+                <option value="8.4.0">PHP 8.4.0</option>
+              </select>
+
+              <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;"
+                title="Select editor type">
+                <option value="monaco">Monaco</option>
+                <option value="codemirror">CodeMirror</option>
+              </select>
+            </div> <!-- /d-flex -->
+          </div> <!-- /#editor-header-1 -->
+
+          <div id="editor-header-2" class="card-header" style="overflow: hidden;">
+
+            <!-- Row 2: Selectors aligned right -->
+            <div class="row mt-2">
+              <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+
+                <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;"
+                  title="Select PHP example">
+                  <option value="hello_world">Hello World</option>
+                  <option value="phpinfo">PHP Info</option>
+                  <option value="extensions">Show Loaded Extensions</option>
+                  <option value="array_align">Array Align Example</option>
+                  <option value="json">JSON Example</option>
+                  <option value="stdout_stderr_return">Output Types</option>
+                </select>
+
+                <button id="load-file-button" class="btn btn-secondary" title="Load a file into the editor">
+                  <i class="bi bi-folder"></i>
+                  <span class="ps-2">Load File</span>
+                </button>
+
+                <button id="save-button" class="btn btn-secondary custom-btn-size"
+                  title="Save the current code to file">
+                  <i class="bi bi-save"></i>
+                  <span class="ps-2">Save</span>
+                </button>
+                <button id="copy-button" class="btn btn-secondary custom-btn-size"
+                  title="Copy the current code to clipboard">
+                  <i class="bi bi-clipboard"></i>
+                  <span class="ps-2">Copy</span>
+                </button>
+                <button id="reset-button" class="btn btn-danger custom-btn-size"
+                  title="Reset the editor to a basic example">
+                  <i class="bi bi-arrow-clockwise"></i>
+                  <span class="ps-2">Reset</span>
+                </button>
+
+              </div> <!-- /col-12 -->
+            </div> <!-- /Row 2 -->
+          </div> <!-- /#editor-header-2 -->
 
           <div id="editor-body" class="card-body">
             <!-- Editor -->
@@ -257,15 +267,15 @@
 echo 'PHP Version: ' . phpversion() . "\n";
 echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
 </textarea>
-          </div>
-        </div>
-      </div>
+          </div> <!-- /#editor-body -->
+        </div> <!-- /#editor-wrapper -->
+      </div> <!-- /#left -->
 
       <!-- Right Side (Output) -->
       <div id="right" class="col-6">
         <div id="output-panels">
 
-          <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 200px;">
+          <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 220px;">
 
             <div id="standard-output-header"
               class="card-header bg-success text-white d-flex justify-content-between align-items-center"
@@ -301,7 +311,7 @@ echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
 
           <div class="m-2"></div>
 
-          <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 200px;">
+          <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 220px;">
             <!-- Standard Error Output -->
             <div id="standard-error-output-header"
               class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
