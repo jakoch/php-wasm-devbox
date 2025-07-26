@@ -20,7 +20,7 @@
     },
     //"postCreateCommand": "composer install && npm install",
     "postCreateCommand": "./setup.sh",
-    "forwardPorts": [8080, 3000],
+    "forwardPorts": [8000, 3000],
     //"remoteuser": "vscode",
     "remoteUser": "root",
     // connect to local ollama server

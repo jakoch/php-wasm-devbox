@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepare deploy folder
+        run: |
+          mkdir deploy
+          cp -r playground/* deploy/
+          cd deploy
+          rm -rf .devcontainer node_modules test-results
+          rm -f .editorconfig .gitignore biome.json package.json readme.md serve.sh setup.sh
+
+      - name: ✔ Initialize Git and commit
+        run: |
+          cd deploy
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git checkout -b gh-pages
+          git add .
+          git commit -m "Deploy to GitHub Pages from ${GITHUB_REPOSITORY}@${GITHUB_SHA::9}"
+
+      - name: 🚀 Push to gh-pages branch
+        run: |
+          cd deploy
+          git push --force origin gh-pages

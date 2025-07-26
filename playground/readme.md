@@ -33,6 +33,9 @@
 - [ ] provide "opcodes" tab to see the instruction in the PHP VM
   - [ ] compile "vulcan logic dumper" php extension into the wasm module
 - [ ] provide "docs" tab to list the php functions used with a link to the php manual
+- [ ] push playground to gh-pages
+      - copy from playground to dist, exclude files/folders
+      - `git subtree push --prefix playground\dist origin gh-pages`
 
 ## In-Progress
 
