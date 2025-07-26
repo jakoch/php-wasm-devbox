@@ -225,12 +225,7 @@
 
                 <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;"
                   title="Select PHP example">
-                  <option value="hello_world">Hello World</option>
-                  <option value="phpinfo">PHP Info</option>
-                  <option value="extensions">Show Loaded Extensions</option>
-                  <option value="array_align">Array Align Example</option>
-                  <option value="json">JSON Example</option>
-                  <option value="stdout_stderr_return">Output Types</option>
+                  <!-- Options are dynamically loaded -->
                 </select>
 
                 <button id="load-file-button" class="btn btn-secondary" title="Load a file into the editor">
@@ -356,6 +351,7 @@ echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <!-- Playground Scripts -->
   <script src="assets/js/timer.js"></script>
+  <script src="assets/js/examples-loader.js"></script>
   <script type="module" src="assets/js/playground.js"></script>
 </body>
 

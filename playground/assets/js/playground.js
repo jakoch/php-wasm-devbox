@@ -1,4 +1,3 @@
-
 /**
  * Playground Overview
  * --------------------
@@ -353,10 +352,40 @@ const uiElements = {
     }
 };
 
+// Load the examples list and populate the dropdown
+// This function fetches the examples from a static JSON file or falls back to hardcoded examples.
+async function loadExamplesList() {
+  let examples = [];
+  try {
+      const resp = await fetch('examples/examples.json');
+      examples = await resp.json();
+  } catch (e) {
+    examples = [
+      { value: 'hello_world', label: 'Hello World' },
+      { value: 'phpinfo', label: 'PHP Info' },
+      { value: 'extensions', label: 'Show Loaded Extensions' },
+      { value: 'array_align', label: 'Array Align Example' },
+      { value: 'json', label: 'JSON Example' },
+      { value: 'stdout_stderr_return', label: 'Output Types' }
+    ];
+  }
+  const select = document.getElementById('php-example-switcher');
+  select.innerHTML = '';
+  for (const ex of examples) {
+    const opt = document.createElement('option');
+    opt.value = ex.value;
+    opt.textContent = ex.label;
+    select.appendChild(opt);
+  }
+}
+
 // Setup Playground Interactions
 document.addEventListener("DOMContentLoaded", async () => {
     const php = new PHP();
     const editor = new CodeEditor();
+
+    // Lade die Beispiel-Liste
+    await loadExamplesList();
 
     /* Navigation */
 
@@ -474,8 +503,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             uiElements.outputModeHtml = false;
         }
-        const response = await fetch(`examples/_get_file.php?file=${example}`);
-        const content = await response.text();
+        let content = '';
+        const isGithubPages = location.hostname.endsWith('github.io');
+        if (isGithubPages) {
+            // on GitHub Pages there is no PHP backend, so we load the php files as text files
+            const response = await fetch(`examples/${example}.php`);
+            content = await response.text();
+        } else {
+            // we have a PHP backend available
+            const response = await fetch(`examples/_get_file.php?file=${example}`);
+            content = await response.text();
+        }
         editor.setContent(content);
     });
 

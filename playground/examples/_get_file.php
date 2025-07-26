@@ -31,7 +31,7 @@ $example = basename($_GET['file']);
 // 1. get all files in the examples directory using scandir
 // 2. filter out the current and parent directory (dots) and the current file
 // 3. remove the .php extension from the files
-$reduced_file_set = array_diff(scandir(__DIR__), ['.', '..', '_get_file.php']);
+$reduced_file_set = array_diff(scandir(__DIR__), ['.', '..', '_get_file.php', 'examples.json']);
 $accepted_files = array_map(
     fn($file) => str_replace('.php', '', $file),
     $reduced_file_set
