@@ -1,9 +1,16 @@
 name: Deploy to GitHub Pages
 
 on:
+  # You can manually run this workflow.
+  workflow_dispatch:
+  # This workflow will run on every push to the main branch.
   push:
     branches:
       - main
+    # Restrict the workflow to run only on changes to the following paths.
+    paths:
+      - 'playground/**'
+      - '.github/workflows/deploy-gh-pages.yml'
 
 jobs:
   deploy:
