@@ -1,0 +1,8 @@
+[
+  { "value": "hello_world", "label": "Hello World" },
+  { "value": "phpinfo", "label": "PHP Info" },
+  { "value": "extensions", "label": "Show Loaded Extensions" },
+  { "value": "array_align", "label": "Array Align Example" },
+  { "value": "json", "label": "JSON Example" },
+  { "value": "stdout_stderr_return", "label": "Output Types" }
+]
