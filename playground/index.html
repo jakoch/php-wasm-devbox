@@ -135,8 +135,27 @@
         <h4><u>Interactions</u></h4>
         <div class="row">
           <div class="col-3 fw-bold">Run Button</div>
-          <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.
-          </div>
+          <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Auto Run Toggle</div>
+          <div class="col-9">Automatically executes the PHP code when the editor content changes.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Version Dropdown</div>
+          <div class="col-9">You can switch the PHP Version using the PHP version selector.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Editor Dropdown</div>
+          <div class="col-9">You can switch between CodeMirror and Monaco editors using the editor type selector.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Example Dropdown</div>
+          <div class="col-9">You can select a PHP example from the dropdown to load it into the editor.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Load File Button</div>
+          <div class="col-9">Loads a PHP file into the editor. The files are loaded from the examples folder.</div>
         </div>
         <div class="row">
           <div class="col-3 fw-bold">Save Button</div>
@@ -149,14 +168,6 @@
         <div class="row">
           <div class="col-3 fw-bold">Reset Button</div>
           <div class="col-9">Resets the PHP code editor to a basic hello world example.</div>
-        </div>
-        <div class="row">
-          <div class="col-3 fw-bold">Editor Dropdown</div>
-          <div class="col-9">You can switch between CodeMirror and Monaco editors using the editor type selector.</div>
-        </div>
-        <div class="row">
-          <div class="col-3 fw-bold">PHP Version Dropdown</div>
-          <div class="col-9">You can switch the PHP Version using the PHP version selector.</div>
         </div>
         <div class="row">
           <div class="col-3 fw-bold">Output Mode Toggle</div>
@@ -330,7 +341,7 @@ echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
     <!-- Footer -->
     <footer class="text-center text-white-50 py-3">
       <div>
-        PHP-WASM Playground v0.3.0<br>
+        <div id="app-version">PHP-WASM Playground v0.3.0</div>
         <a class="text-white-50" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a><br>
         Copyright (c) 2025 Jens A. Koch
       </div>

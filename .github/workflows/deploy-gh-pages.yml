@@ -33,7 +33,17 @@ jobs:
           cp -r playground/* deploy/
           cd deploy
           rm -rf .devcontainer node_modules test-results
-          rm -f .editorconfig .gitignore biome.json package.json readme.md serve.sh setup.sh
+          rm -f .editorconfig .gitignore biome.json readme.md serve.sh setup.sh
+
+      - name: Set Application Version
+        run: |
+          cd deploy
+          git_hash=$(git rev-parse --short HEAD)
+          echo "Git hash: $git_hash"
+          version=$(node -p "require('./package.json').version")
+          echo "Version: $version"
+          echo "{\"version\": \"$version\", \"git_hash\": \"$git_hash\"}" > version.json
+          rm -f package.json
 
       - name: ✔ Initialize Git and commit
         run: |

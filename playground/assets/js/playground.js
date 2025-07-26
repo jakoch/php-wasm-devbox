@@ -379,12 +379,25 @@ async function loadExamplesList() {
   }
 }
 
+// load version.json file to display the application version
+async function loadVersion() {
+    try {
+        const response = await fetch('version.json');
+        const versionData = await response.json();
+        const versionElement = document.getElementById("app-version");
+        versionElement.textContent = `PHP-WASM Playground v${versionData.version} #${versionData.git_hash}`;
+    } catch (error) {
+        console.error("Error loading version data from version.json:", error);
+    }
+}
+
 // Setup Playground Interactions
 document.addEventListener("DOMContentLoaded", async () => {
     const php = new PHP();
     const editor = new CodeEditor();
 
     await loadExamplesList();
+    await loadVersion();
 
     /* Navigation */
 

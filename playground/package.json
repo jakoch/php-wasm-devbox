@@ -1,6 +1,6 @@
 {
   "name": "php-wasm-playground",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "PHP-WASM Playground is a in-browser PHP playground that uses WebAssembly to run PHP code in the browser.",
   "type": "module",
   "license": "MIT",
