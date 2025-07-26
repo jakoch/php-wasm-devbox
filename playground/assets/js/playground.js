@@ -369,13 +369,13 @@ async function loadExamplesList() {
       { value: 'stdout_stderr_return', label: 'Output Types' }
     ];
   }
-  const select = document.getElementById('php-example-switcher');
-  select.innerHTML = '';
+  const phpExampleDropdown = document.getElementById("php-example-switcher");
+  phpExampleDropdown.innerHTML = '';
   for (const ex of examples) {
     const opt = document.createElement('option');
     opt.value = ex.value;
     opt.textContent = ex.label;
-    select.appendChild(opt);
+    phpExampleDropdown.appendChild(opt);
   }
 }
 
@@ -384,7 +384,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const php = new PHP();
     const editor = new CodeEditor();
 
-    // Lade die Beispiel-Liste
     await loadExamplesList();
 
     /* Navigation */
