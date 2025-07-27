@@ -367,7 +367,7 @@ function compareVersions(a, b) {
 // Fetch the PHP versions from the static JSON file
 async function loadPhpVersions() {
     const phpVersionDropdown = document.getElementById("php-version-switcher");
-    const response = await fetch('assets/wasm/php_versions.json');
+    const response = await fetch('assets/wasm/php-versions.json');
     const versions = await response.json();
     phpVersionDropdown.innerHTML = ''; // Clear existing options
     // sort versions by value, highest first
