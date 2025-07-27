@@ -49,6 +49,7 @@ jobs:
             first=0
           done
           echo "]" >> php-versions.json
+          cat php-versions.json
 
       - name: Set Application Version
         run: |
