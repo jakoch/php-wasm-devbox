@@ -356,19 +356,8 @@ const uiElements = {
 // This function fetches the examples from a static JSON file or falls back to hardcoded examples.
 async function loadExamplesList() {
   let examples = [];
-  try {
-      const resp = await fetch('examples/examples.json');
-      examples = await resp.json();
-  } catch (e) {
-    examples = [
-      { value: 'hello_world', label: 'Hello World' },
-      { value: 'phpinfo', label: 'PHP Info' },
-      { value: 'extensions', label: 'Show Loaded Extensions' },
-      { value: 'array_align', label: 'Array Align Example' },
-      { value: 'json', label: 'JSON Example' },
-      { value: 'stdout_stderr_return', label: 'Output Types' }
-    ];
-  }
+  const resp = await fetch('examples/examples.json');
+  examples = await resp.json();
   const phpExampleDropdown = document.getElementById("php-example-switcher");
   phpExampleDropdown.innerHTML = '';
   for (const ex of examples) {

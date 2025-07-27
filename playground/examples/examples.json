@@ -3,6 +3,7 @@
   { "value": "phpinfo", "label": "PHP Info" },
   { "value": "extensions", "label": "Show Loaded Extensions" },
   { "value": "array_align", "label": "Array Align Example" },
+  { "value": "binary_to_decimal", "label": "Binary to Decimal" },
   { "value": "json", "label": "JSON Example" },
   { "value": "stdout_stderr_return", "label": "Output Types" }
 ]
