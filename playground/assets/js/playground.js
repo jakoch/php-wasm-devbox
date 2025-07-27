@@ -352,6 +352,39 @@ const uiElements = {
     }
 };
 
+function compareVersions(a, b) {
+  const aParts = a.split('.').map(Number);
+  const bParts = b.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aNum = aParts[i] || 0;
+    const bNum = bParts[i] || 0;
+    if (aNum !== bNum) return bNum - aNum; // descending
+  }
+  return 0;
+}
+
+// Fetch the PHP versions from the static JSON file
+async function loadPhpVersions() {
+    const phpVersionDropdown = document.getElementById("php-version-switcher");
+    const response = await fetch('assets/wasm/php_versions.json');
+    const versions = await response.json();
+    phpVersionDropdown.innerHTML = ''; // Clear existing options
+    // sort versions by value, highest first
+    versions.sort((a, b) => compareVersions(a.value, b.value));
+    // Populate the dropdown with the versions
+    for (const version of versions) {
+        const option = document.createElement('option');
+        option.value = version.value;
+        option.textContent = "PHP " + version.value; // label the option with "PHP " prefix
+        phpVersionDropdown.appendChild(option);
+    }
+    // Set the default version to the latest one
+    if (versions.length > 0) {
+        phpVersionDropdown.value = versions[0].value; // Set the first version as default
+    }
+}
+
 // Load the examples list and populate the dropdown
 // This function fetches the examples from a static JSON file or falls back to hardcoded examples.
 async function loadExamplesList() {
