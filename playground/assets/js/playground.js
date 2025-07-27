@@ -418,6 +418,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const php = new PHP();
     const editor = new CodeEditor();
 
+    /* Load initial data dynamically */
+
+    await loadPhpVersions();
     await loadExamplesList();
     await loadVersion();
 
