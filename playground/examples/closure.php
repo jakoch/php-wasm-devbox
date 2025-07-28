@@ -28,4 +28,8 @@ $numbers = range(1, 5);
 // The result will be an array of doubled numbers
 $new_numbers = array_map($double, $numbers);
 
+assert(is_array($new_numbers));
+assert(count($new_numbers) === 5);
+assert($new_numbers === [2, 4, 6, 8, 10]);
+
 print implode(' ', $new_numbers);
