@@ -18,8 +18,12 @@
 - [ ] display Ln:x, Col: y of the cursor in a status bar at the bottom
 - [ ] display Content size in bytes in status bar
 - [ ] allow to decrease/increased font size of editor (small t, big T icons)
-- [ ] persistent editor state: Save the editor content and settings (PHP version, output mode, etc.) in localStorage, so users can resume where they left off?
-- [ ] inline documentation: Show PHP function signatures and documentation tooltips in the editor (using Monaco’s hover provider or similar)?
+- [ ] persistent editor state:
+  - Save the editor content and settings (PHP version, output mode, etc.) in localStorage
+  - so users can resume where they left off?
+- [ ] inline documentation
+  - Show PHP function signatures and documentation tooltips in the editor
+  - using Monaco’s hover provider or similar?
 - [ ] accessibility improvements: Ensure the playground is usable with screen readers and keyboard navigation.
 
 ## Todo
@@ -45,11 +49,12 @@
 
 ## In-Progress
 
-- [ ] Run code using multiple PHP-WASM modules
-  - [ ] compile multiple PHP-WASM modules
+- [ ] Editor: Run code using multiple PHP-WASM modules
+- [ ] Builder: compile multiple PHP-WASM modules
   - [ ] use PHP version as DOCKER argument
-  - [ ] support only "Currently Supported Version" of PHP, https://www.php.net/supported-versions.php
-    - grab this via json? or hardcode the matrix?
+- [ ] support only "Currently Supported Version" of PHP
+  - https://www.php.net/supported-versions.php
+  - grab this via json? or hardcode the matrix?
 
 ## Features (Done)
 

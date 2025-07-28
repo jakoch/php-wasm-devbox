@@ -1,7 +1,15 @@
 
 :root {
     --bs-gray-900: #212529;
+    --bs-gray-800: #343a40;
+    --bs-white: #fff;
     --bs-light: #f8f9fa;
+    font-display: swap;
+}
+
+body {
+    background-color: var(--bs-gray-800);
+    color: var(--bs-white);
 }
 
 .navbar {

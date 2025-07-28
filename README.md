@@ -11,15 +11,16 @@ From there, I made extensive modifications to enhance flexibility, efficiency, a
 ### What is PHP-WASM?
 
 PHP-WASM is a WebAssembly module that runs PHP directly in the browser, compiled
- using Emscripten. It eliminates the need for a server, allowing PHP code to
- execute entirely on the client side.
+using Emscripten. It eliminates the need for a server, allowing PHP code to
+execute entirely on the client side.
 
 You can call PHP functions from JavaScript by interacting with the WebAssembly
 module, enabling seamless integration between both languages.
 
 A great example of its use is interactive PHP documentation, where small code
 snippets can be executed instantly on the client side, or an online PHP
-playground—similar to 3v4l, but running entirely in the browser.
+playground—similar to [3v4l](https://3v4l.org/), but running entirely in the browser, such as my
+[https://jakoch.github.io/php-wasm-devbox/](jakoch.github.io/php-wasm-devbox/) project.
 
 #### Key Features
 
