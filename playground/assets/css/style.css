@@ -7,11 +7,6 @@
     font-display: swap;
 }
 
-body {
-    background-color: var(--bs-gray-800);
-    color: var(--bs-white);
-}
-
 .navbar {
     position: relative;
     background-color: var(--bs-gray-900);
@@ -40,6 +35,11 @@ body {
 .nav-link:hover,
 .nav-link:active {
     color: #8892BF;
+}
+
+#bootstrap-body-override {
+    background-color: var(--bs-gray-800);
+    color: var(--bs-white);
 }
 
 #editor-container {
