@@ -3,26 +3,25 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PHP-WASM Playground</title>
-  <meta name="description" content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
+  <meta name="description" content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly.">
   <!-- Open Graph -->
-  <!--<meta property="og:url" content="https://..." />-->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="PHP-WASM Playground" />
+  <!--<meta property="og:url" content="https://...">-->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PHP-WASM Playground">
   <meta property="og:description"
-    content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
-  <meta property="og:site_name" content="PHP Playground" />
-  <!--<meta property="og:image" content="https://.../logo.png" />-->
+    content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly.">
+  <meta property="og:site_name" content="PHP Playground">
+  <!--<meta property="og:image" content="https://.../logo.png">-->
   <!-- Twitter -->
-  <meta name=”twitter:card” content="summary_large_image" />
-  <meta name=”twitter:creator” content="@jens-andre-koch" />
-  <meta name=”twitter:title” content="PHP-WASM Playground" />
+  <meta name=”twitter:card” content="summary_large_image">
+  <meta name=”twitter:creator” content="@jens-andre-koch">
+  <meta name=”twitter:title” content="PHP-WASM Playground">
   <meta name=”twitter:description”
-    content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly." />
-  <!--<meta name=”twitter:image” content="https://.../logo.png" />-->
-  <link rel="shortcut icon" href="assets/favicon.ico" />
+    content="PHP-WASM Playground is a simple in-browser editor for PHP using WebAssembly.">
+  <!--<meta name=”twitter:image” content="https://.../logo.png">-->
+  <link rel="shortcut icon" href="assets/favicon.ico">
 </head>
 
 <body id="bootstrap-body-override">
@@ -198,6 +197,8 @@
 
               <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;"
                 title="Select PHP version">
+                <!-- Placeholder option to avoid layout shift -->
+                <option value="" disabled selected>Select Version</option>
                 <!-- Options are dynamically loaded -->
               </select>
 
@@ -217,6 +218,8 @@
 
                 <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;"
                   title="Select PHP example">
+                  <!-- Placeholder option to avoid layout shift -->
+                  <option value="" disabled selected>Select Example</option>
                   <!-- Options are dynamically loaded -->
                 </select>
 
@@ -320,7 +323,7 @@ echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
     </div> <!-- /#editor-container -->
 
     <!-- Footer -->
-    <footer class="text-center text-white py-3">
+    <footer class="text-center py-3">
       <div>
         <div id="app-version">PHP-WASM Playground v0.3.0</div>
         <a class="text-white-50" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a><br>
@@ -332,24 +335,24 @@ echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
 
   </div> <!-- /#main-container -->
 
-  <!-- Style -->
-  <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
   <!-- Bootstrap -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.7/css/bootstrap.min.css"
     integrity="sha512-fw7f+TcMjTb7bpbLJZlP8g2Y4XcCyFZW8uy8HsRZsH/SwbMw0plKHFHr99DN3l04VsYNwvzicUX/6qurvIxbxw=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+    crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css"
     integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+    crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- CodeMirror Style with Monokai Theme -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
     integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+    crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css"
     integrity="sha512-R6PH4vSzF2Yxjdvb2p2FA06yWul+U0PDDav4b/od/oXf9Iw37zl10plvwOXelrjV2Ai7Eo3vyHeyFUjhXdBCVQ=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- Style (is the last to override)-->
+  <link rel="stylesheet" type="text/css" href="assets/css/style.css">
   <!-- CodeMirror Editor & Mode -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
     integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="

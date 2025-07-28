@@ -371,6 +371,12 @@ async function loadPhpVersions() {
     phpVersionDropdown.innerHTML = ''; // Clear existing options
     // sort versions by value, highest first
     versions.sort(compareVersions);
+    // add select version as first option
+    const selectOption = document.createElement('option');
+    selectOption.value = '';
+    selectOption.textContent = "Select Version";
+    selectOption.disabled = true; // make it unselectable
+    phpVersionDropdown.appendChild(selectOption);
     // Populate the dropdown with the versions
     for (const version of versions) {
         const option = document.createElement('option');
@@ -387,17 +393,24 @@ async function loadPhpVersions() {
 // Load the examples list and populate the dropdown
 // This function fetches the examples from a static JSON file or falls back to hardcoded examples.
 async function loadExamplesList() {
-  let examples = [];
-  const resp = await fetch('examples/examples.json');
-  examples = await resp.json();
-  const phpExampleDropdown = document.getElementById("php-example-switcher");
-  phpExampleDropdown.innerHTML = '';
-  for (const ex of examples) {
-    const opt = document.createElement('option');
-    opt.value = ex.value;
-    opt.textContent = ex.label;
-    phpExampleDropdown.appendChild(opt);
-  }
+    let examples = [];
+    const resp = await fetch('examples/examples.json');
+    examples = await resp.json();
+    const phpExampleDropdown = document.getElementById("php-example-switcher");
+    phpExampleDropdown.innerHTML = '';
+    // add select example as first option
+    const selectOption = document.createElement('option');
+    selectOption.value = '';
+    selectOption.textContent = "Select Example";
+    selectOption.disabled = true; // make it unselectable
+    phpExampleDropdown.appendChild(selectOption);
+    // Populate the dropdown with the examples
+    for (const ex of examples) {
+        const opt = document.createElement('option');
+        opt.value = ex.value;
+        opt.textContent = ex.label;
+        phpExampleDropdown.appendChild(opt);
+    }
 }
 
 // load version.json file to display the application version
