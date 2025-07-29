@@ -25,6 +25,7 @@
   - Show PHP function signatures and documentation tooltips in the editor
   - using Monaco’s hover provider or similar?
 - [ ] accessibility improvements: Ensure the playground is usable with screen readers and keyboard navigation.
+- [ ] display the "auto run" interval and last exec time, maybe with "flashing dot" exec indication?
 
 ## Todo
 
@@ -33,6 +34,10 @@
 - [ ] provide "opcodes" tab to see the instruction in the PHP VM
   - [ ] compile "vulcan logic dumper" php extension into the wasm module
 - [ ] provide "docs" tab to list the php functions used with a link to the php manual
+- [ ] allow usage of `declare(strict_types=1);` on the first line
+    - `<?php declare(strict_types=1);` will trigger
+    - `Fatal error: strict_types declaration must be the very first statement in the script in script on line 1`
+    - which implies that the php-wasm module adds an internal first line to the executed php content?
 
 ## Will-not-implement
 
