@@ -254,9 +254,10 @@
             <textarea id="editor" class="form-control" rows="15">
 &lt;?php
 
-// Display PHP version and loaded extensions
-echo 'PHP Version: ' . phpversion() . "\n";
-echo 'Loaded Modules: ' . implode(", ", get_loaded_extensions()) . "\n";
+// This example shows how to get the PHP version and list all loaded PHP extensions.
+
+echo 'PHP Version: ' . phpversion() . "\n \n";
+echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . "\n";
 </textarea>
           </div> <!-- /#editor-body -->
         </div> <!-- /#editor-wrapper -->

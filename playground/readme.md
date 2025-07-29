@@ -35,9 +35,9 @@
   - [ ] compile "vulcan logic dumper" php extension into the wasm module
 - [ ] provide "docs" tab to list the php functions used with a link to the php manual
 - [ ] allow usage of `declare(strict_types=1);` on the first line
-    - `<?php declare(strict_types=1);` will trigger
-    - `Fatal error: strict_types declaration must be the very first statement in the script in script on line 1`
-    - which implies that the php-wasm module adds an internal first line to the executed php content?
+  - `<?php declare(strict_types=1);` will trigger
+  - `Fatal error: strict_types declaration must be the very first statement in the script in script on line 1`
+  - which implies that the php-wasm module adds an internal first line to the executed php content?
 
 ## Will-not-implement
 

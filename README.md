@@ -67,7 +67,7 @@ repository to improve structure, maintainability, and deployment efficiency.
 
 - Integrated **Hadolint** for Dockerfile linting.
 
-### Developing the playground
+### Developing the Playground
 
 - Open the `/playground` folder as a standalone project in VS Code.
 - The playground provides its own devcontainer for isolated development.
