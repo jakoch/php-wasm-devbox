@@ -27,44 +27,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Prepare deploy folder
+      - name: Generate version list for PHP-WASM modules (php-versions.json)
         run: |
-          mkdir deploy
-          cp -r playground/* deploy/
-          cd deploy
-          rm -rf .devcontainer node_modules test-results
-          rm -f .editorconfig .gitignore biome.json readme.md serve.sh setup.sh
+          ./playground/build-tools/scripts/generate-php-versions-json.sh
 
-      - name: Generate php-versions.json from WASM filenames
+      - name: Set Application Version (version.json)
         run: |
-          cd deploy/assets/wasm
-          echo "[" > php-versions.json
-          first=1
-          for file in php-*-web.wasm; do
-            [ -e "$file" ] || continue
-            # Extract version from filename, e.g. php-8.4.8-web.wasm -> 8.4.8
-            version=$(echo "$file" | sed -E 's/^php-([0-9]+\.[0-9]+\.[0-9]+)-web\.wasm$/\1/')
-            if [ $first -eq 0 ]; then echo "," >> php-versions.json; fi
-            echo "  {\"version\": \"$version\"}" >> php-versions.json
-            first=0
-          done
-          echo "]" >> php-versions.json
-          cat php-versions.json
-
-      - name: Set Application Version
-        run: |
-          cd deploy
-          git_hash=$(git rev-parse --short HEAD)
-          echo "Git hash: $git_hash"
-          version=$(node -p "require('./package.json').version")
-          echo "Version: $version"
-          echo "{\"version\": \"$version\", \"git_hash\": \"$git_hash\"}" > version.json
-          rm -f package.json
+          ./playground/build-tools/scripts/generate-app-version-json.sh
 
       - name: Test JSON files for validity
         run: |
-          cd deploy
-          for file in version.json php-versions.json playground/examples/examples.json; do
+          cd playground
+          for file in version.json php-versions.json examples/examples.json; do
             if [ -f "$file" ]; then
               if ! jq empty "$file"; then
                 echo "Invalid JSON in $file"
@@ -72,6 +46,14 @@ jobs:
               fi
             fi
           done
+
+      - name: Prepare deploy folder
+        run: |
+          mkdir deploy
+          cp -r playground/* deploy/
+          cd deploy
+          rm -rf .devcontainer node_modules test-results
+          rm -f .editorconfig .gitignore package.json biome.json readme.md serve.sh setup.sh
 
       - name: ✔ Initialize Git and commit
         run: |
