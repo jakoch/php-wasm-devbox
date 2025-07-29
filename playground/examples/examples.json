@@ -6,5 +6,6 @@
   { "value": "binary_to_decimal", "label": "Binary to Decimal" },
   { "value": "json", "label": "JSON Example" },
   { "value": "output_types", "label": "Output Types" },
-  { "value": "closure", "label": "Closure Example" }
+  { "value": "closure", "label": "Closure Example" },
+  { "value": "ext_dom", "label": "Dom Extension Example" }
 ]
