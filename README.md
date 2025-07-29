@@ -69,7 +69,10 @@ repository to improve structure, maintainability, and deployment efficiency.
 
 ### Developing the playground
 
-- Start editing `/playground` files.
-- Start the server with `php -S localhost:8000` in the playground folder.
-- Browse to `localhost:8000`.
-- For the todo and feature list, refer to the [playground readme](./playground/readme.md).
+- Open the `/playground` folder as a standalone project in VS Code.
+- The playground provides its own devcontainer for isolated development.
+- Once inside the devcontainer, you can freely edit files within `/playground`.
+- To launch the local development server, run `./serve.sh` from the `/playground` directory.
+  This start script will also build required JSON data files, which are loaded by the static web page.
+- Visit [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser to access the playground.
+- For the feature roadmap and todos, see the [playground README](./playground/readme.md).
