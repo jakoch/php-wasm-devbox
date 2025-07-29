@@ -1,2 +1,10 @@
 .pnpm-store/
 playground/node_modules/
+
+# these files are automatically generated 
+# a) by serve.sh (when you run the playground locally)
+# b) by the workflow on ci
+
+playground/assets/wasm/php-versions.json
+playground/version.json
+
