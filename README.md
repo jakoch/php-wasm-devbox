@@ -19,8 +19,8 @@ module, enabling seamless integration between both languages.
 
 A great example of its use is interactive PHP documentation, where small code
 snippets can be executed instantly on the client side, or an online PHP
-playground—similar to [3v4l](https://3v4l.org/), but running entirely in the browser, such as my
-[https://jakoch.github.io/php-wasm-devbox/](jakoch.github.io/php-wasm-devbox/) project.
+playground — similar to [3v4l](https://3v4l.org/), but running entirely in the browser, such as my
+[php-wasm-devbox playground](https://jakoch.github.io/php-wasm-devbox/) project.
 
 #### Key Features
 
