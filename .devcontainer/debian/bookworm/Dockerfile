@@ -15,6 +15,7 @@ FROM debian:bookworm-slim AS build-stage
 ARG PHP_VERSION=8.4.10
 ARG ONIGURUMA_VERSION=6.9.10
 ARG LIBXML_VERSION=2.13.5
+ARG VLD_VERSION=0.19.1
 ARG EMSCRIPTEN_VERSION=4.0.4
 
 # +-----------------------------+
@@ -36,6 +37,8 @@ WORKDIR /local/src
 # Copy php-wasm-bridge source to /local/src
 COPY src/php-wasm-bridge.c /local/src/php-wasm-bridge.c
 
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
 RUN echo "Packages" && \
     apt-get update && \
 	apt-get --no-install-recommends -y install \
@@ -50,6 +53,7 @@ RUN echo "Packages" && \
 	re2c \
 	git \
 	pv \
+    curl \
 	ca-certificates \
 	python3 && \
     echo "Cleanup" && \
@@ -57,14 +61,16 @@ RUN echo "Packages" && \
     apt-get clean autoclean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     echo "Configure git to avoid warnings" && \
-    git config --global advice.detachedHead false && \
+    git config --global advice.detachedHead false
+
+RUN set -e; \
     echo "Install Emscripten SDK" && \
-	git clone  https://github.com/emscripten-core/emsdk.git --branch $EMSCRIPTEN_VERSION --single-branch --depth 1 && \
+	git clone  https://github.com/emscripten-core/emsdk.git --branch "${EMSCRIPTEN_VERSION}" --single-branch --depth 1 && \
 	cd emsdk && \
 	./emsdk install latest && \
 	./emsdk activate latest && \
     echo "Download PHP and prepare build system" && \
-	git clone https://github.com/php/php-src.git /local/src/php-src/ --branch PHP-$PHP_VERSION --single-branch --depth 1 && \
+	git clone https://github.com/php/php-src.git /local/src/php-src/ --branch "PHP-${PHP_VERSION}" --single-branch --depth 1 && \
 	cd /local/src/php-src/ && \
 	./buildconf --force && \
     echo "Create install directory" && \
@@ -79,30 +85,50 @@ ENV PATH=/local/src/emsdk:/local/src/emsdk/upstream/emscripten:/usr/local/bin:/u
 	EM_CONFIG=/local/src/emsdk/.emscripten \
     CFLAGS="-O3 -g0" CXXFLAGS="-O3 -g0" LDFLAGS="-O3 -g0"
 
-RUN echo "Compile oniguruma (mbstring regex library)" && \
-    git clone https://github.com/kkos/oniguruma --branch v$ONIGURUMA_VERSION --single-branch --depth 1 && \
-	cd oniguruma && \
-	autoreconf -vfi && \
-	emconfigure ./configure --prefix=/local/install --disable-shared && \
-	emmake make && \
-	emmake make install &&\
-    echo "Compile libxml2" && \
-    git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2 --branch v$LIBXML_VERSION  --single-branch --depth 1 && \
-	cd libxml2 && \
-	emconfigure ./autogen.sh --prefix=/local/install --enable-static --disable-shared --with-python=no --with-threads=no && \
-	emmake make -j"$(nproc)" && \
-	emmake make install
+RUN set -e; \
+    echo "Compile oniguruma (mbstring regex library)" && \
+    git clone https://github.com/kkos/oniguruma --branch "v${ONIGURUMA_VERSION}" --single-branch --depth 1 && \
+    cd oniguruma && \
+    autoreconf -vfi && \
+    emconfigure ./configure --host="$(emcc -dumpmachine)" --prefix=/local/install --disable-shared && \
+    emmake make && \
+    emmake make install && \
+    echo "Compile libxml2 (XML library)" && \
+    git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2 --branch "v${LIBXML_VERSION}"  --single-branch --depth 1 && \
+    cd libxml2 && \
+    emconfigure ./autogen.sh --host="$(emcc -dumpmachine)" --prefix=/local/install --enable-static --disable-shared --with-python=no --with-threads=no && \
+    emmake make -j"$(nproc)" && \
+    emmake make install && \
+    echo "Compile sqlite3" && \
+    mkdir -p /local/src/sqlite && \
+    curl -o /tmp/sqlite-autoconf-3500300.tar.gz https://www.sqlite.org/2025/sqlite-autoconf-3500300.tar.gz && \
+    tar -xzf /tmp/sqlite-autoconf-3500300.tar.gz -C /local/src/sqlite --strip-components=1 && \
+    rm -f /tmp/sqlite-autoconf-3500300.tar.gz && \
+    cd /local/src/sqlite && \
+    emconfigure ./configure --host="$(emcc -dumpmachine)" --prefix=/local/install --enable-static --disable-shared && \
+    emmake make -j"$(nproc)" && \
+    emmake make install
 
 # Setting ENV vars for oniguruma and libxml
+# oniguruma is used by mbstring and libxml2 is used by the XML extension.
+# both are fetched before, see above.
+# sqlite3 is installed via libsqlite3-dev package.
 ENV ONIG_LIBS="-L/local/install" \
 	ONIG_CFLAGS="-I/local/install/include" \
 	LIBXML_LIBS="-L/local/install" \
-	LIBXML_CFLAGS="-I/local/install/include/libxml2"
+	LIBXML_CFLAGS="-I/local/install/include/libxml2" \
+    SQLITE_LIBS="-L/local/install" \
+    SQLITE_CFLAGS="-I/local/install/include"
+
+RUN echo "Clone VLD extension" && \
+    git clone https://github.com/derickr/vld.git /local/src/php-src/ext/vld --branch $VLD_VERSION --single-branch --depth 1
 
 # https://www.php.net/manual/en/configure.about.php
-RUN echo "Configure PHP" && \
+RUN set -e; \
+    echo "Configure PHP" && \
     cd /local/src/php-src/ && \
 	emconfigure ./configure \
+    --host="$(emcc -dumpmachine)" \
     --enable-embed=static \
 	--disable-all \
 	--disable-cgi \
@@ -114,9 +140,13 @@ RUN echo "Configure PHP" && \
 	--enable-dom \
 	--enable-mbstring \
 	--enable-simplexml \
-	--enable-xml \
 	--enable-xmlreader \
+    --enable-pdo \
+    --enable-vld \
+    --enable-xml \
     --with-libxml \
+    --with-pdo-sqlite \
+    --with-sqlite3 \
     --without-pcre-jit \
     --without-pear && \
     echo "Compile WASM bridge for PHP" && \
@@ -173,9 +203,10 @@ RUN echo "Configure PHP" && \
 # Emscripten compiler settings:
 # https://emscripten.org/docs/tools_reference/settings_reference.html
 #
-RUN echo "Create PHP-WASM (ES6 JavaScript module)" && \
+RUN set -e; \
+    echo "Create PHP-WASM (ES6 JavaScript module)" && \
     mkdir -p /php-wasm && \
- 	emcc -o /php-wasm/php-$PHP_VERSION-web.mjs \
+ 	emcc -o "/php-wasm/php-${PHP_VERSION}-web.mjs" \
  	-O3 \
     -g0 \
     -flto=full \

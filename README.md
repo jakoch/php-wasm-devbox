@@ -67,6 +67,15 @@ repository to improve structure, maintainability, and deployment efficiency.
 
 - Integrated **Hadolint** for Dockerfile linting.
 
+## Docker Arguments
+
+The following arguments are available for the Dockerfile:
+
+- PHP_VERSION - Sets the version of the PHP interpreter to build.
+- ONIGURUMA_VERSION - Sets the version of the Oniguruma library (for parsing regular expressions using mbstring).
+- LIBXML_VERSION - Sets the version of the LibXML library.
+- EMSCRIPTEN_VERSION - Sets the version of Emscripten.
+
 ### Developing the Playground
 
 - Open the `/playground` folder as a standalone project in VS Code.
