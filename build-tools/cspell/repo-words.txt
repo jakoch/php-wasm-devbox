@@ -16,3 +16,4 @@ Continous
 continous
 continously
 seperator
+mbstring
