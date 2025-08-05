@@ -132,6 +132,9 @@ class CodeEditor {
         cursor: document.getElementById("statusbar-cursor"),
         size: document.getElementById("statusbar-size")
     };
+    #fontSize = 14;
+    #minFontSize = 10;
+    #maxFontSize = 32;
 
     constructor() {
         // Initialize immediately
@@ -196,6 +199,31 @@ class CodeEditor {
             }
         }
         this.setStatusBar(line, col, content.length);
+        this.updateDocsPanel();
+    }
+
+    updateDocsPanel() {
+        const docsPanelFooter = document.getElementById('docs-panel-footer');
+        if (!docsPanelFooter) return;
+        const content = this.getContent();
+        // Simple regex to match PHP function calls (not perfect, but works for most cases)
+        const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
+        const phpKeywords = new Set([
+            'if','else','elseif','for','foreach','while','do','switch','case','break','continue','return','function','echo','print','include','require','require_once','include_once','namespace','class','interface','trait','extends','implements','public','protected','private','static','abstract','final','const','var','new','try','catch','finally','throw','use','global','isset','unset','empty','array','list','callable','clone','declare','default','die','enddeclare','endfor','endforeach','endif','endswitch','endwhile','eval','exit','goto','instanceof','insteadof','yield','match','print_r','var_dump','define','self','parent','static','true','false','null','__construct','__destruct','__call','__callStatic','__get','__set','__isset','__unset','__sleep','__wakeup','__toString','__invoke','__set_state','__clone','__debugInfo'
+        ]);
+        const found = new Set();
+        let match;
+        while ((match = functionRegex.exec(content)) !== null) {
+            const fn = match[1];
+            if (!phpKeywords.has(fn)) found.add(fn);
+        }
+        if (found.size === 0) {
+            docsPanelFooter.innerHTML = '<span class="text-muted">No PHP functions detected.</span>';
+            return;
+        }
+        docsPanelFooter.innerHTML = Array.from(found).sort().map(fn =>
+            `<a href="https://www.php.net/manual/en/function.${fn.toLowerCase()}.php" target="_blank" rel="noopener" class="text-info text-decoration-underline me-3">${fn}()</a>`
+        ).join(' ');
     }
 
     async destroyCurrentEditor() {
@@ -317,6 +345,28 @@ class CodeEditor {
 
     async dispose() {
         await this.destroyCurrentEditor();
+    }
+
+    setFontSize(size) {
+        this.#fontSize = Math.max(this.#minFontSize, Math.min(this.#maxFontSize, size));
+        if (this.#editorInstance) {
+            if (this.#currentEditor === "monaco" && this.#editorInstance.updateOptions) {
+                this.#editorInstance.updateOptions({ fontSize: this.#fontSize });
+            } else if (this.#currentEditor === "codemirror" && this.#editorInstance.getWrapperElement) {
+                this.#editorInstance.getWrapperElement().style.fontSize = this.#fontSize + "px";
+                this.#editorInstance.refresh && this.#editorInstance.refresh();
+            }
+        }
+        this.updateFontSizeDisplay();
+    }
+
+    getFontSize() {
+        return this.#fontSize;
+    }
+
+    updateFontSizeDisplay() {
+        const fontSizeValue = document.getElementById("font-size-value");
+        if (fontSizeValue) fontSizeValue.textContent = this.#fontSize + "px";
     }
 }
 
@@ -645,6 +695,26 @@ document.addEventListener("DOMContentLoaded", async () => {
             uiElements.outputHtml = phpRawOutput; // Show as HTML
         } else {
             uiElements.output = phpRawOutput; // Show as raw text
+        }
+    });
+
+    // Font size controls
+    const fontDecrease = document.getElementById("font-decrease");
+    const fontIncrease = document.getElementById("font-increase");
+    if (fontDecrease && fontIncrease) {
+        fontDecrease.addEventListener("click", () => editor.setFontSize(editor.getFontSize() - 1));
+        fontIncrease.addEventListener("click", () => editor.setFontSize(editor.getFontSize() + 1));
+    }
+    // Keyboard shortcuts for font size
+    document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+            if (e.key === "+" || e.key === "=") {
+                editor.setFontSize(editor.getFontSize() + 1);
+                e.preventDefault();
+            } else if (e.key === "-" || e.key === "_") {
+                editor.setFontSize(editor.getFontSize() - 1);
+                e.preventDefault();
+            }
         }
     });
 });

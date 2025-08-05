@@ -15,11 +15,10 @@
     ```
 
 - [ ] automatic code formatting using tidy extension?
-- [ ] allow to decrease/increased font size of editor (small t, big T icons)
 - [ ] persistent editor state:
   - Save the editor content and settings (PHP version, output mode, etc.) in localStorage
   - so users can resume where they left off?
-- [ ] inline documentation
+- [ ] inline documentation / code guidance by hovering
   - Show PHP function signatures and documentation tooltips in the editor
   - using Monaco’s hover provider or similar?
 - [ ] accessibility improvements: Ensure the playground is usable with screen readers and keyboard navigation.
@@ -30,7 +29,9 @@
   - for each version display: version, system time, user time, memory
 - [ ] provide "opcodes" tab to see the instruction in the PHP VM
   - [ ] compile "vulcan logic dumper" php extension into the wasm module
-- [ ] provide "docs" tab to list the php functions used with a link to the php manual
+  - [ ] compiling seems uncomplicated, but activating the extension isnt possible during runtime, because one can't set PHP_SYSTEM_INI directives. this needs to be done on the outside env.
+  so, i assume seems these INI settings have to be set and compiled into the php-wasm-bridge.c?
+  - [ ] or ship a php.ini with the wasm module and bake it in (together with other asset files)
 - [ ] allow usage of `declare(strict_types=1);` on the first line
   - `<?php declare(strict_types=1);` will trigger
   - `Fatal error: strict_types declaration must be the very first statement in the script in script on line 1`
@@ -86,3 +87,5 @@
 - [x] Publish playground on Github Pages: https://jakoch.github.io/php-wasm-devbox/
 - [x] Status bar: display Ln:x, Col:y of the cursor and content size in bytes at the bottom of the editor
 - [x] display the "auto run" interval, with run button flash exec indication on the UI; auto_run_interval is a constant.
+- [x] Status bar font size controls: decrease/increase font size of editor (small/big A icons) and keyboard shortcuts Ctrl + "+" and Ctrl + "-"
+- [x] provide "docs" panel underneath code editor panel to list the php functions used with a link to the php manual

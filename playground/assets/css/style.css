@@ -121,3 +121,31 @@
     box-shadow: 0 0 8px 2px #ffc107;
     transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
+
+#footer {
+    position: relative;
+    width: 100%;
+    margin-top: 2rem;
+    clear: both;
+}
+
+html, body, #main-container {
+  height: max-content;
+  min-height: 620px;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#main-container {
+  flex: 1 0 auto;
+}
+
+footer {
+  background: #23272b;
+  color: #adb5bd;
+  padding: 1rem 0;
+}

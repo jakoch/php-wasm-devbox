@@ -116,7 +116,8 @@
         <h4><u>Interactions</u></h4>
         <div class="row">
           <div class="col-3 fw-bold">Run Button</div>
-          <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.</div>
+          <div class="col-9">Executes the PHP code using the PHP-WASM module and returns the output in the output panel.
+          </div>
         </div>
         <div class="row">
           <div class="col-3 fw-bold">Auto Run Toggle</div>
@@ -235,11 +236,13 @@
                   <i class="bi bi-save"></i>
                   <span class="ps-2">Save</span>
                 </button>
+
                 <button id="copy-button" class="btn btn-secondary custom-btn-size"
                   title="Copy the current code to clipboard">
                   <i class="bi bi-clipboard"></i>
                   <span class="ps-2">Copy</span>
                 </button>
+
                 <button id="reset-button" class="btn btn-danger custom-btn-size"
                   title="Reset the editor to a basic example">
                   <i class="bi bi-arrow-clockwise"></i>
@@ -251,7 +254,8 @@
           </div> <!-- /#editor-header-2 -->
 
           <div id="editor-body" class="card-body">
-            <!-- Editor -->
+
+            <!-- Editor Textarea -->
             <textarea id="editor" class="form-control" rows="15">
 &lt;?php
 
@@ -261,17 +265,51 @@ echo 'PHP Version: ' . phpversion() . "\n \n";
 echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . "\n";
 </textarea>
           </div> <!-- /#editor-body -->
-          <div id="editor-statusbar" class="bg-dark text-white px-3 py-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.95em; min-height: 32px;">
+
+          <!-- Editor Status Bar -->
+          <div id="editor-statusbar"
+            class="bg-dark text-white px-3 py-2 border-top d-flex justify-content-between align-items-center"
+            style="font-size: 0.95em; min-height: 32px;">
             <span id="statusbar-cursor">Ln: 1, Col: 1</span>
             <span id="statusbar-size">Size: 0 bytes</span>
+            <span id="statusbar-fontsize" class="d-flex align-items-center ms-3">
+              <button id="font-decrease" class="btn btn-sm btn-outline-light px-2 py-0 me-1" title="Decrease font size"
+                style="font-size:1.1em;line-height:1;">A</button>
+              <span id="font-size-value" class="mx-1"
+                style="min-width:2.5em;display:inline-block;text-align:center;">14px</span>
+              <button id="font-increase" class="btn btn-sm btn-outline-light px-2 py-0 ms-1" title="Increase font size"
+                style="font-size:1.5em;line-height:1;">A</button>
+            </span>
           </div>
+
         </div> <!-- /#editor-wrapper -->
+
+        <!-- Spacer -->
+        <div class="m-2">&nbsp;</div>
+
+        <!-- Documentation Panel -->
+
+        <div id="docs-panel" class="card bg-dark">
+          <div id="docs-panel-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            style="overflow: hidden; height: 60px;">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-journal-text fs-3"></i>
+              <span class="ffw-bold fs-4 ps-2">Documentation for PHP functions</span>
+            </div>
+          </div>
+          <div id="docs-panel-footer" class="card-body py-2 px-3">
+            <span class="text-light">No PHP functions detected.</span>
+          </div>
+        </div>
+
       </div> <!-- /#left -->
 
       <!-- Right Side (Output) -->
       <div id="right" class="col-6">
+
         <div id="output-panels">
 
+          <!-- Output Panel -->
           <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 220px;">
 
             <div id="standard-output-header"
@@ -304,11 +342,15 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
             <div id="standard-output-body" class="card-body">
               <pre id="standard-output" class="p-2 border border-dark rounded pre-direct text-white">Ready!</pre>
             </div>
+
           </div> <!-- /#standard-output -->
 
-          <div class="m-2"></div>
+          <!-- Spacer -->
+          <div class="m-2">&nbsp;</div>
 
+          <!-- Errors Panel -->
           <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 220px;">
+
             <!-- Standard Error Output -->
             <div id="standard-error-output-header"
               class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
@@ -323,24 +365,35 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
               <pre id="standard-error-output"
                 class="p-2 border border-dark rounded pre-direct text-white">No Errors!</pre>
             </div>
+
           </div> <!-- /#standard-error-output -->
 
         </div> <!-- /#output-panels -->
       </div> <!-- /#right -->
     </div> <!-- /#editor-container -->
 
-    <!-- Footer -->
-    <footer class="text-center py-3">
-      <div>
-        <div id="app-version">PHP-WASM Playground v0.3.0</div>
-        <a class="text-white-50" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a><br>
-        Copyright (c) 2025 Jens A. Koch
-      </div>
-      <a class="text-white-50" href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
-        target="_blank" rel="noopener noreferrer">Test PageSpeed</a>
-    </footer>
-
   </div> <!-- /#main-container -->
+
+  <!-- Footer -->
+  <footer class="bg-dark text-center text-lg-start">
+    <div class="container">
+      <div class="text-center p-2">
+        <div>
+          <span id="app-version">PHP-WASM Playground v0.3.0 #g0dm0d3</span>
+          &nbsp;|&nbsp;
+          <a class="text-info" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a>
+          &nbsp;|&nbsp;
+          <span>© 2025 Jens A. Koch</span>
+        </div>
+        <div class="mt-1">
+          <a class="text-info mx-2" href="https://pagespeed.web.dev/..." target="_blank" rel="noopener noreferrer">Test
+            PageSpeed</a>
+          <a class="text-info mx-2" href="https://jigsaw.w3.org/css-validator/..." target="_blank"
+            rel="noopener noreferrer">Test CSS</a>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <!-- Bootstrap -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.7/css/bootstrap.min.css"
