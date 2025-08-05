@@ -104,3 +104,20 @@
     align-items: center;
     padding: 0 1rem;
 }
+
+#auto-run-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #28a745;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+}
+
+.run-flash {
+    background: #ffc107 !important;
+    color: #212529 !important;
+    box-shadow: 0 0 8px 2px #ffc107;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}

@@ -23,7 +23,6 @@
   - Show PHP function signatures and documentation tooltips in the editor
   - using Monaco’s hover provider or similar?
 - [ ] accessibility improvements: Ensure the playground is usable with screen readers and keyboard navigation.
-- [ ] display the "auto run" interval and last exec time, maybe with "flashing dot" exec indication?
 
 ## Todo
 
@@ -86,3 +85,4 @@
 - [x] Save button to save editor content as a PHP file
 - [x] Publish playground on Github Pages: https://jakoch.github.io/php-wasm-devbox/
 - [x] Status bar: display Ln:x, Col:y of the cursor and content size in bytes at the bottom of the editor
+- [x] display the "auto run" interval, with run button flash exec indication on the UI; auto_run_interval is a constant.

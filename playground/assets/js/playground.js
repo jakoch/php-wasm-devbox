@@ -320,6 +320,9 @@ class CodeEditor {
     }
 }
 
+// Set the auto-run interval (ms)
+const AUTO_RUN_INTERVAL_MS = 3000;
+
 // Save content to a file
 function saveToFile(content, filename) {
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -432,8 +435,7 @@ async function loadPhpVersions() {
     }
 }
 
-// Load the examples list and populate the dropdown
-// This function fetches the examples from a static JSON file or falls back to hardcoded examples.
+// Load the examples list json and populate the dropdown
 async function loadExamplesList() {
     let examples = [];
     const resp = await fetch('examples/examples.json');
@@ -500,39 +502,56 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // run button
     const runButton = document.getElementById("run-button");
-    runButton.addEventListener("click", async () => {
-        const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
-        if(uiElements.isOutputModeHtml) {
-            uiElements.outputHtml = result.output;
-        } else {
-            uiElements.output = result.output;
-        }
-        uiElements.output_error = result.output_error;
-        uiElements.phpVersionDisplay = result.version;
-        uiElements.perfDataDisplay = result.executionTime;
-    });
-
     // auto run checkbox
     const autoRunCheckbox = document.getElementById("auto-run");
-    let runInterval = null; // debounce the run interval (do not run too frequently)
-    autoRunCheckbox.addEventListener("click", () => {
+    const autoRunIntervalDisplay = document.getElementById("auto-run-interval");
+    let runInterval = null;
+    let autoRunExecuting = false;
+
+    // Set initial interval display
+    if (autoRunIntervalDisplay) {
+        autoRunIntervalDisplay.textContent = `Interval: ${AUTO_RUN_INTERVAL_MS / 1000}s`;
+    }
+
+    function flashRunButton() {
+        if (!runButton) return;
+        runButton.classList.add('run-flash');
+        setTimeout(() => runButton.classList.remove('run-flash'), 400);
+    }
+
+    function startAutoRun() {
+        if (runInterval) clearInterval(runInterval);
+        runInterval = setInterval(async () => {
+            if (autoRunExecuting) return;
+            autoRunExecuting = true;
+            flashRunButton();
+            const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
+            if (uiElements.isOutputModeHtml) {
+                uiElements.outputHtml = result.output;
+            } else {
+                uiElements.output = result.output;
+            }
+            uiElements.output_error = result.output_error;
+            uiElements.phpVersionDisplay = result.version;
+            uiElements.perfDataDisplay = result.executionTime;
+            autoRunExecuting = false;
+        }, AUTO_RUN_INTERVAL_MS);
+    }
+    function stopAutoRun() {
+        if (runInterval) clearInterval(runInterval);
+        runInterval = null;
+    }
+    autoRunCheckbox.addEventListener("change", () => {
         if (autoRunCheckbox.checked) {
-            runInterval = setInterval(async () => {
-                console.log("Running PHP code continuously ...");
-                const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
-                if (uiElements.isOutputModeHtml) {
-                    uiElements.outputHtml = result.output;
-                } else {
-                    uiElements.output = result.output;
-                }
-                uiElements.output_error = result.output_error;
-                uiElements.phpVersionDisplay = result.version;
-                uiElements.perfDataDisplay = result.executionTime;
-            }, 3000);
+            startAutoRun();
         } else {
-            clearInterval(runInterval);
+            stopAutoRun();
         }
     });
+    // If checkbox is checked on load, start auto run
+    if (autoRunCheckbox.checked) {
+        startAutoRun();
+    }
 
     // save button
     const saveButton = document.getElementById("save-button");
@@ -589,6 +608,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const phpExampleDropdown = document.getElementById("php-example-switcher");
     phpExampleDropdown.addEventListener("change", async (event) => {
         const example = event.target.value;
+        // automatically switch the output mode to HTML, if the example is phpinfo()
         if(example === "phpinfo") {
             uiElements.outputModeHtml = true;
         } else {
