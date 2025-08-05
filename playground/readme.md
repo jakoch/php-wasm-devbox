@@ -22,6 +22,8 @@
   - Show PHP function signatures and documentation tooltips in the editor
   - using Monaco’s hover provider or similar?
 - [ ] accessibility improvements: Ensure the playground is usable with screen readers and keyboard navigation.
+- [ ] Show more detailed performance metrics (e.g., memory usage)
+- [ ] Further accessibility improvements (ARIA, tab order, screen reader)
 
 ## Todo
 

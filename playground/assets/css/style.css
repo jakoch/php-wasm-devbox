@@ -40,22 +40,19 @@
     color: var(--bs-white);
 }
 
-#editor-container {
-    /* TODO how to make this responsive?
-       and dont let editor-header overflow when the screen is too small? */
-    min-width: 1550px; /* protect the editor from being too small */
-}
-
 #editor {
+    flex: none;
+    resize: none;
     font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
     font-size: 0.9em;
     width: 100%;
-    height: 300px;
+    height: 100%;
+    min-height: 100px;
+    max-height: 400px;
     border: 1px solid #444;
     background-color: #2d2d2d;
     color: #ffffff;
     text-align: left;
-    min-width: 100%;
 }
 
 #php-version-display {
@@ -129,8 +126,7 @@
 }
 
 html, body, #main-container {
-  height: max-content;
-  min-height: 620px;
+  min-height: 0;
 }
 
 body {
@@ -147,4 +143,25 @@ footer {
   background: #23272b;
   color: #adb5bd;
   padding: 1rem 0;
+}
+
+#left.col-6, #editor-wrapper.card {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#editor-body.card-body {
+  height: 400px;
+  display: block;
+  min-height: 0;
+  max-height: none;
+}
+
+/* PHP Docs Panel Header Gradient - Official PHP Blue */
+#docs-panel-header {
+    background: linear-gradient(90deg, #4F5B93 0%, #8892BF 100%); /* PHP blue gradient */
+    color: #fff;
+    border-bottom: 2px solid #4F5B93;
 }

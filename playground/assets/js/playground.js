@@ -318,7 +318,7 @@ class CodeEditor {
                     const newEditor = document.createElement("div");
                     newEditor.id = "editor";
                     //newEditor.className = "resizable-content";
-                    newEditor.style.height = "300px";
+                    newEditor.style.height = "100%"; // Allow flexbox/CSS to control height
                     editor.replaceWith(newEditor);
 
                     const monacoInstance = monaco.editor.create(newEditor, {
@@ -557,10 +557,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const autoRunIntervalDisplay = document.getElementById("auto-run-interval");
     let runInterval = null;
     let autoRunExecuting = false;
+    let editorSwitching = false;
 
     // Set initial interval display
     if (autoRunIntervalDisplay) {
         autoRunIntervalDisplay.textContent = `Interval: ${AUTO_RUN_INTERVAL_MS / 1000}s`;
+    }
+
+    function setRunButtonDisabled(disabled) {
+        if (runButton) runButton.disabled = !!disabled;
     }
 
     function flashRunButton() {
@@ -572,19 +577,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     function startAutoRun() {
         if (runInterval) clearInterval(runInterval);
         runInterval = setInterval(async () => {
-            if (autoRunExecuting) return;
+            if (autoRunExecuting || editorSwitching) return;
             autoRunExecuting = true;
+            setRunButtonDisabled(true);
             flashRunButton();
-            const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
-            if (uiElements.isOutputModeHtml) {
-                uiElements.outputHtml = result.output;
-            } else {
-                uiElements.output = result.output;
+            try {
+                const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
+                if (uiElements.isOutputModeHtml) {
+                    uiElements.outputHtml = result.output;
+                } else {
+                    uiElements.output = result.output;
+                }
+                uiElements.output_error = result.output_error;
+                uiElements.phpVersionDisplay = result.version;
+                uiElements.perfDataDisplay = result.executionTime;
+            } catch (err) {
+                uiElements.output_error = err.message;
             }
-            uiElements.output_error = result.output_error;
-            uiElements.phpVersionDisplay = result.version;
-            uiElements.perfDataDisplay = result.executionTime;
             autoRunExecuting = false;
+            setRunButtonDisabled(false);
         }, AUTO_RUN_INTERVAL_MS);
     }
     function stopAutoRun() {
@@ -603,42 +614,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         startAutoRun();
     }
 
-    // save button
-    const saveButton = document.getElementById("save-button");
-    saveButton.addEventListener("click", () => {
-        const content = editor.getContent();
-        // timestamp format is YYYYMMDD-HHMM
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '').replace('T', '-').slice(0, 15);
-        // file name format is "index-YYYYMMDD-HHMM.php"
-        const filename = `index-${timestamp}.php`;
-        saveToFile(content, filename);
-    });
-
-    // copy button
-    const copyButton = document.getElementById("copy-button");
-    copyButton.addEventListener("click", () => {
-        const content = editor.getContent();
-        navigator.clipboard.writeText(content).then(() => {
-            console.log("Copied to clipboard:", content);
-        }).catch((error) => {
-            console.error("Failed to copy to clipboard:", error);
-        });
-    });
-
-    // reset button
-    const resetButton = document.getElementById("reset-button");
-    resetButton.addEventListener("click", () => {
-        editor.setContent("<?php\n\necho 'Hello, World!';\n");
-        uiElements.output = "Ready!";
-        uiElements.outputModeHtml = false; // reset to raw output
-        uiElements.output_error = "No Errors!";
-        uiElements.phpVersionDisplay = "0.0.0";
-        uiElements.perfDataDisplay = "0s";
+    // run button click handler with improved checks
+    runButton.addEventListener("click", async () => {
+        if (autoRunExecuting || editorSwitching) return;
+        setRunButtonDisabled(true);
+        try {
+            const phpVersion = uiElements.phpVersionDropdown;
+            if (!phpVersion) {
+                uiElements.output_error = "Please select a PHP version.";
+                setRunButtonDisabled(false);
+                return;
+            }
+            const result = await php.runPHP(editor.getContent(), phpVersion);
+            if (uiElements.isOutputModeHtml) {
+                uiElements.outputHtml = result.output;
+            } else {
+                uiElements.output = result.output;
+            }
+            uiElements.output_error = result.output_error;
+            uiElements.phpVersionDisplay = result.version;
+            uiElements.perfDataDisplay = result.executionTime;
+        } catch (err) {
+            uiElements.output_error = err.message;
+        }
+        setRunButtonDisabled(false);
     });
 
     // editor switcher
     const editorDropdown = document.getElementById("editor-switcher");
-    editorDropdown.addEventListener("change", (event) => editor.switchEditor(event.target.value));
+    editorDropdown.addEventListener("change", async (event) => {
+        editorSwitching = true;
+        setRunButtonDisabled(true);
+        try {
+            await editor.switchEditor(event.target.value);
+        } finally {
+            editorSwitching = false;
+            setRunButtonDisabled(false);
+        }
+    });
 
     // php version switcher
     const phpVersionDropdown = document.getElementById("php-version-switcher");
