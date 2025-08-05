@@ -211,17 +211,21 @@ class CodeEditor {
         const phpKeywords = new Set([
             'if','else','elseif','for','foreach','while','do','switch','case','break','continue','return','function','echo','print','include','require','require_once','include_once','namespace','class','interface','trait','extends','implements','public','protected','private','static','abstract','final','const','var','new','try','catch','finally','throw','use','global','isset','unset','empty','array','list','callable','clone','declare','default','die','enddeclare','endfor','endforeach','endif','endswitch','endwhile','eval','exit','goto','instanceof','insteadof','yield','match','print_r','var_dump','define','self','parent','static','true','false','null','__construct','__destruct','__call','__callStatic','__get','__set','__isset','__unset','__sleep','__wakeup','__toString','__invoke','__set_state','__clone','__debugInfo'
         ]);
-        const found = new Set();
+        const foundSet = new Set();
+        const foundOrdered = [];
         let match;
         while ((match = functionRegex.exec(content)) !== null) {
             const fn = match[1];
-            if (!phpKeywords.has(fn)) found.add(fn);
+            if (!phpKeywords.has(fn) && !foundSet.has(fn)) {
+                foundSet.add(fn);
+                foundOrdered.push(fn);
+            }
         }
-        if (found.size === 0) {
+        if (foundOrdered.length === 0) {
             docsPanelFooter.innerHTML = '<span class="text-muted">No PHP functions detected.</span>';
             return;
         }
-        docsPanelFooter.innerHTML = Array.from(found).sort().map(fn =>
+        docsPanelFooter.innerHTML = foundOrdered.map(fn =>
             `<a href="https://www.php.net/manual/en/function.${fn.toLowerCase()}.php" target="_blank" rel="noopener" class="text-info text-decoration-underline me-3">${fn}()</a>`
         ).join(' ');
     }
