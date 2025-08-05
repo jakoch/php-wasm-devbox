@@ -260,6 +260,10 @@ echo 'PHP Version: ' . phpversion() . "\n \n";
 echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . "\n";
 </textarea>
           </div> <!-- /#editor-body -->
+          <div id="editor-statusbar" class="bg-dark text-white px-3 py-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.95em; min-height: 32px;">
+            <span id="statusbar-cursor">Ln: 1, Col: 1</span>
+            <span id="statusbar-size">Size: 0 bytes</span>
+          </div>
         </div> <!-- /#editor-wrapper -->
       </div> <!-- /#left -->
 

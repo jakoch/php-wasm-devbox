@@ -15,8 +15,6 @@
     ```
 
 - [ ] automatic code formatting using tidy extension?
-- [ ] display Ln:x, Col: y of the cursor in a status bar at the bottom
-- [ ] display Content size in bytes in status bar
 - [ ] allow to decrease/increased font size of editor (small t, big T icons)
 - [ ] persistent editor state:
   - Save the editor content and settings (PHP version, output mode, etc.) in localStorage
@@ -87,3 +85,4 @@
   - [x] set content mode HTML for phpinfo example automatically, raw for all others
 - [x] Save button to save editor content as a PHP file
 - [x] Publish playground on Github Pages: https://jakoch.github.io/php-wasm-devbox/
+- [x] Status bar: display Ln:x, Col:y of the cursor and content size in bytes at the bottom of the editor

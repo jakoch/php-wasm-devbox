@@ -128,6 +128,10 @@ class PHP {
 class CodeEditor {
     #editorInstance = null;
     #currentEditor = "monaco";
+    #statusBar = {
+        cursor: document.getElementById("statusbar-cursor"),
+        size: document.getElementById("statusbar-size")
+    };
 
     constructor() {
         // Initialize immediately
@@ -165,6 +169,33 @@ class CodeEditor {
         if (editor) {
             editor.value = content;
         }
+        this.updateStatusBar();
+    }
+
+    setStatusBar(line = 1, col = 1, size = 0) {
+        if (this.#statusBar.cursor) {
+            this.#statusBar.cursor.textContent = `Ln: ${line}, Col: ${col}`;
+        }
+        if (this.#statusBar.size) {
+            this.#statusBar.size.textContent = `Size: ${size} bytes`;
+        }
+    }
+
+    updateStatusBar() {
+        const content = this.getContent();
+        let line = 1, col = 1;
+        if (this.#editorInstance) {
+            if (this.#currentEditor === "monaco" && this.#editorInstance.getPosition) {
+                const pos = this.#editorInstance.getPosition();
+                line = pos.lineNumber;
+                col = pos.column;
+            } else if (this.#currentEditor === "codemirror" && this.#editorInstance.getCursor) {
+                const pos = this.#editorInstance.getCursor();
+                line = pos.line + 1;
+                col = pos.ch + 1;
+            }
+        }
+        this.setStatusBar(line, col, content.length);
     }
 
     async destroyCurrentEditor() {
@@ -197,6 +228,17 @@ class CodeEditor {
             console.error("Failed to switch editor:", error);
             throw error;
         }
+
+        if (this.#editorInstance) {
+            if (editorType === "monaco") {
+                this.#editorInstance.onDidChangeCursorPosition(() => this.updateStatusBar());
+                this.#editorInstance.onDidChangeModelContent(() => this.updateStatusBar());
+            } else if (editorType === "codemirror") {
+                this.#editorInstance.on("cursorActivity", () => this.updateStatusBar());
+                this.#editorInstance.on("change", () => this.updateStatusBar());
+            }
+        }
+        this.updateStatusBar();
     }
 
     initCodeMirror() {
@@ -486,7 +528,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 uiElements.output_error = result.output_error;
                 uiElements.phpVersionDisplay = result.version;
                 uiElements.perfDataDisplay = result.executionTime;
-            }, 2000);
+            }, 3000);
         } else {
             clearInterval(runInterval);
         }
