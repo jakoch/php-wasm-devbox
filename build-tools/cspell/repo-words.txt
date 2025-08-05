@@ -17,3 +17,9 @@ continous
 continously
 seperator
 mbstring
+
+endswitch
+endwhile
+insteadof
+wakeup
+noopener

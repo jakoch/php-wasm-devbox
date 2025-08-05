@@ -29,7 +29,7 @@
   - for each version display: version, system time, user time, memory
 - [ ] provide "opcodes" tab to see the instruction in the PHP VM
   - [ ] compile "vulcan logic dumper" php extension into the wasm module
-  - [ ] compiling seems uncomplicated, but activating the extension isnt possible during runtime, because one can't set PHP_SYSTEM_INI directives. this needs to be done on the outside env.
+  - [ ] compiling seems uncomplicated, but activating the extension is not possible during runtime, because one can't set PHP_SYSTEM_INI directives. this needs to be done on the outside env.
   so, i assume seems these INI settings have to be set and compiled into the php-wasm-bridge.c?
   - [ ] or ship a php.ini with the wasm module and bake it in (together with other asset files)
 - [ ] allow usage of `declare(strict_types=1);` on the first line
