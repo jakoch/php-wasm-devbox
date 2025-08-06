@@ -34,8 +34,12 @@ class PHP {
 
     async #loadWasmBinary(php_version) {
         if (!PHP.#wasmModuleCache[php_version]) {
-            const wasmUrl = `assets/wasm/php-${php_version}-web.wasm`;
-            PHP.#wasmModuleCache[php_version] = fetch(wasmUrl).then(res => res.arrayBuffer());
+            const wasmUrl = `/assets/wasm/php-${php_version}-web.wasm`; // ✅ CORRECT
+            PHP.#wasmModuleCache[php_version] = fetch(wasmUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Failed to fetch WASM: ${res.statusText}`);
+                    return res.arrayBuffer();
+                });
         }
         return PHP.#wasmModuleCache[php_version];
     }
@@ -47,7 +51,7 @@ class PHP {
         }
 
         // load the WASM module dynamically based on the PHP version
-        const modulePath = `assets/wasm/php-${php_version}-web.mjs`;
+        const modulePath = `/assets/wasm/php-${php_version}-web.mjs`;
         const createPhpModule = (await import(modulePath)).default;
 
         // load the WASM binary and cache it
