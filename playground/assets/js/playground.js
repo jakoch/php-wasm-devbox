@@ -375,7 +375,7 @@ class CodeEditor {
 }
 
 // Set the auto-run interval (ms)
-const AUTO_RUN_INTERVAL_MS = 3000;
+let AUTO_RUN_INTERVAL_MS = 2000;
 
 // Save content to a file
 function saveToFile(content, filename) {
@@ -559,9 +559,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     // auto run checkbox
     const autoRunCheckbox = document.getElementById("auto-run");
     const autoRunIntervalDisplay = document.getElementById("auto-run-interval");
+    const autoRunIntervalSelect = document.getElementById("auto-run-interval-select");
     let runInterval = null;
     let autoRunExecuting = false;
     let editorSwitching = false;
+
+    // Set initial dropdown value to match default interval
+    if (autoRunIntervalSelect) {
+        autoRunIntervalSelect.value = (AUTO_RUN_INTERVAL_MS / 1000).toString();
+        autoRunIntervalSelect.addEventListener("change", (event) => {
+            const newVal = parseInt(event.target.value, 10);
+            if (!isNaN(newVal)) {
+                AUTO_RUN_INTERVAL_MS = newVal * 1000;
+                if (autoRunIntervalDisplay) {
+                    autoRunIntervalDisplay.textContent = `Interval: ${newVal}s`;
+                }
+                // If auto-run is enabled, restart with new interval
+                if (autoRunCheckbox.checked) {
+                    stopAutoRun();
+                    startAutoRun();
+                }
+            }
+        });
+    }
 
     // Set initial interval display
     if (autoRunIntervalDisplay) {

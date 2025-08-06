@@ -42,7 +42,9 @@
     <nav class="container-fluid bd-gutter flex-wrap flex-lg-nowrap ms-5">
       <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Playground">
         <i class="bi bi-filetype-php fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">PHP logo</span>
-        <span class="fw-bold fs-3"><h1 class="d-inline m-0 p-0" style="font-size:inherit;">PHP-WASM Playground</h1></span>
+        <span class="fw-bold fs-3">
+          <h1 class="d-inline m-0 p-0" style="font-size:inherit;">PHP-WASM Playground</h1>
+        </span>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bdNavbar"
         aria-controls="bdNavbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,30 +55,38 @@
         <ul class="navbar-nav me-auto bd-navbar-nav pt-2 py-lg-0 ms-5">
           <li class="nav-item">
             <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="#">
-              <i class="bi bi-pencil-square fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Editor</span>Editor
+              <i class="bi bi-pencil-square fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Editor</span>Editor
             </a>
           </li>
           <li class="nav-item">
             <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="#">
-              <i class="bi bi-question-octagon fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Help</span>Help
+              <i class="bi bi-question-octagon fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Help</span>Help
             </a>
           </li>
         </ul>
         <!-- Right section -->
         <ul class="navbar-nav ms-auto bd-navbar-nav pt-2 py-lg-0 me-5">
           <li class="nav-item">
-            <a id="issues-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox/issues">
-              <i class="bi bi-github fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Report Issue</span>Report Issue
+            <a id="issues-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/jakoch/php-wasm-devbox/issues">
+              <i class="bi bi-github fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Report
+                Issue</span>Report Issue
             </a>
           </li>
           <li class="nav-item">
-            <a id="star-github-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/jakoch/php-wasm-devbox">
-              <i class="bi bi-star fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Star on GitHub</span>Star on GitHub
+            <a id="star-github-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/jakoch/php-wasm-devbox">
+              <i class="bi bi-star fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Star on
+                GitHub</span>Star on GitHub
             </a>
           </li>
           <li class="nav-item">
-            <a id="donate-github-link" class="nav-link fs-4 d-flex align-items-center" href="https://github.com/sponsors/jakoch">
-              <i class="bi bi-currency-dollar fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Donate</span>Donate
+            <a id="donate-github-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/sponsors/jakoch">
+              <i class="bi bi-currency-dollar fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Donate</span>Donate
             </a>
           </li>
         </ul>
@@ -87,11 +97,14 @@
   <div id="main-container" class="m-4 p-4" role="main" aria-label="PHP-WASM Playground Main Content">
 
     <!-- Help -->
-    <div id="help-container" class="card bg-dark h-100 border border-dark bg-dark d-none pb-4 mb-4 fs-4" role="region" aria-label="Help Panel">
+    <div id="help-container" class="card bg-dark h-100 border border-dark bg-dark d-none pb-4 mb-4 fs-4" role="region"
+      aria-label="Help Panel">
       <div id="help-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
           <i class="bi bi-question-octagon fs-4" aria-hidden="true"></i>
-          <span class="fw-bold fs-4 ps-2"><h2 class="d-inline m-0 p-0" style="font-size:inherit;">Help</h2></span>
+          <span class="fw-bold fs-4 ps-2">
+            <h2 class="d-inline m-0 p-0" style="font-size:inherit;">Help</h2>
+          </span>
         </div>
       </div>
       <div id="help-body" class="card-body text-white">
@@ -176,7 +189,8 @@
           <li><strong>Ctrl + S</strong>: Save editor content as a PHP file</li>
           <li><strong>Ctrl + C</strong>: Copy editor content to clipboard</li>
           <li><strong>Skip Links</strong>: Use Tab at the top of the page to jump directly to Editor or Output</li>
-          <li><strong>Screen Reader Support</strong>: Output and error panels announce updates automatically; all icons and controls have accessible labels</li>
+          <li><strong>Screen Reader Support</strong>: Output and error panels announce updates automatically; all icons
+            and controls have accessible labels</li>
           <li><strong>All features</strong> are fully usable with keyboard and screen reader</li>
         </ul>
       </div>
@@ -196,41 +210,57 @@
             <!-- Left: Panel Name = Code Editor -->
             <div class="d-flex align-items-center">
               <i class="bi bi-filetype-php fs-3" aria-hidden="true"></i><span class="visually-hidden">PHP logo</span>
-              <span class="fw-bold fs-4 ps-2"><h2 class="d-inline m-0 p-0" style="font-size:inherit;">Code Editor</h2></span>
+              <span class="fw-bold fs-4 ps-2">
+                <h2 class="d-inline m-0 p-0" style="font-size:inherit;">Code Editor</h2>
+              </span>
             </div>
 
             <!-- Right: Controls -->
             <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-              <button id="run-button" class="btn btn-success custom-btn-size" title="Run the PHP script" tabindex="0">
-                <i class="bi bi-play-fill" aria-hidden="true"></i><span class="visually-hidden">Run</span>
+
+              <button id="run-button" class="btn btn-success" title="Run the PHP script" tabindex="0">
+                <i class="bi bi-play-fill" aria-hidden="true"></i>
+                <span class="visually-hidden">Run</span>
                 <span class="ps-2">Run</span>
               </button>
 
               <div class="form-check form-switch text-white d-flex align-items-center">
-                <input class="form-check-input bg-secondary" type="checkbox" id="auto-run" title="Toggle Automatic Run" tabindex="0">
+                <input class="form-check-input bg-secondary" type="checkbox" id="auto-run" title="Toggle Automatic Run"
+                  tabindex="0">
                 <label class="form-check-label ps-1" for="auto-run">Auto Run</label>
-                <span id="auto-run-interval" class="ms-3 small text-info" style="min-width: 90px;">Interval: 3s</span>
               </div>
 
-              <div class="d-flex flex-column align-items-end">
-                <label for="php-version-switcher" class="form-label text-white mb-1" style="font-size:0.95em;">PHP Version</label>
-                <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;"
-                  title="Select PHP version" tabindex="0">
-                  <!-- Placeholder option to avoid layout shift -->
-                  <option value="" disabled selected>Select PHP Version</option>
-                  <!-- Options are dynamically loaded -->
-                </select>
-              </div>
+              <label for="auto-run-interval-select" class="form-label mb-1 visually-hidden">Run
+                Interval</label>
+              <select id="auto-run-interval-select" class="form-select form-select-sm"
+                style="width: auto; min-width: 70px; display: inline-block; vertical-align: middle;"
+                title="Set Auto Run Interval" tabindex="0" aria-label="Set Auto Run Interval">
+                <!-- Placeholder option to avoid layout shift -->
+                <option value="" disabled selected>Select Interval</option>
+                <option value="2" selected>2s</option>
+                <option value="4">4s</option>
+                <option value="6">6s</option>
+                <option value="8">8s</option>
+              </select>
 
-              <div class="d-flex flex-column align-items-end">
-                <label for="editor-switcher" class="form-label text-white mb-1" style="font-size:0.95em;">Editor</label>
-                <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;"
-                  title="Select editor type" tabindex="0">
-                  <option value="" disabled>Select Editor</option>
-                  <option value="monaco" selected>Monaco</option>
-                  <option value="codemirror">CodeMirror</option>
-                </select>
-              </div>
+              <label for="php-version-switcher" class="form-label text-white mb-1 visually-hidden">PHP Version</label>
+              <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;"
+                title="Select PHP version" tabindex="0">
+                <!-- Placeholder option to avoid layout shift -->
+                <option value="" disabled selected>Select Version</option>
+                <!-- Options are dynamically loaded -->
+              </select>
+
+
+
+              <label for="editor-switcher" class="form-label text-white mb-1 visually-hidden">Editor</label>
+              <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;"
+                title="Select editor type" tabindex="0">
+                <option value="" disabled>Select Editor</option>
+                <option value="monaco" selected>Monaco</option>
+                <option value="codemirror">CodeMirror</option>
+              </select>
+
             </div> <!-- /d-flex -->
           </div> <!-- /#editor-header-1 -->
 
@@ -238,45 +268,62 @@
 
             <!-- Row 2: Selectors aligned right -->
             <div class="row mt-2">
-              <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+              <div class="col-12 d-flex flex-wrap justify-content-end align-items-end gap-2">
 
-                <div class="d-flex flex-column align-items-end">
-                  <label for="php-example-switcher" class="form-label text-white mb-1" style="font-size:0.95em;">Example</label>
-                  <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;"
-                    title="Select PHP example" tabindex="0">
-                    <!-- Placeholder option to avoid layout shift -->
+                <!-- Load Example Dropdown -->
+                <div class="d-flex flex-column align-items-end me-2">
+                  <label for="php-example-switcher" class="form-label text-white mb-1 visually-hidden">
+                    Load Example
+                  </label>
+                  <select id="php-example-switcher" class="form-select form-select-sm"
+                    style="width: auto; min-width: 160px;" title="Select a PHP example" tabindex="0"
+                    aria-label="Select a PHP example">
                     <option value="" disabled selected>Select Example</option>
-                    <!-- Options are dynamically loaded -->
                   </select>
                 </div>
 
-                <button id="load-file-button" class="btn btn-secondary" title="Load a file into the editor" tabindex="0">
-                  <i class="bi bi-folder" aria-hidden="true"></i><span class="visually-hidden">Load File</span>
-                  <span class="ps-2">Load File</span>
-                </button>
+                <!-- Action Buttons Grouped -->
+                <div class="btn-group" role="group" aria-label="Editor actions">
 
-                <button id="save-button" class="btn btn-secondary custom-btn-size" title="Save the current code to file" tabindex="0">
-                  <i class="bi bi-save" aria-hidden="true"></i><span class="visually-hidden">Save</span>
-                  <span class="ps-2">Save</span>
-                </button>
+                  <button id="load-file-button" class="btn btn-secondary" title="Load file" aria-label="Load file"
+                    tabindex="0">
+                    <i class="bi bi-folder" aria-hidden="true"></i>
+                    <span class="visually-hidden">Load</span>
+                    <span class="ps-2">Load</span>
+                  </button>
 
-                <button id="copy-button" class="btn btn-secondary custom-btn-size" title="Copy the current code to clipboard" tabindex="0">
-                  <i class="bi bi-clipboard" aria-hidden="true"></i><span class="visually-hidden">Copy</span>
-                  <span class="ps-2">Copy</span>
-                </button>
+                  <button id="save-button" class="btn btn-secondary" title="Save file" aria-label="Save file"
+                    tabindex="0">
+                    <i class="bi bi-save" aria-hidden="true"></i>
+                    <span class="visually-hidden">Save</span>
+                    <span class="ps-2">Save</span>
+                  </button>
 
-                <button id="reset-button" class="btn btn-danger custom-btn-size" title="Reset the editor to a basic example" tabindex="0">
-                  <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span class="visually-hidden">Reset</span>
-                  <span class="ps-2">Reset</span>
-                </button>
+                  <button id="copy-button" class="btn btn-secondary" title="Copy code" aria-label="Copy code"
+                    tabindex="0">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                    <span class="visually-hidden">Copy</span>
+                    <span class="ps-2">Copy</span>
+                  </button>
 
-              </div> <!-- /col-12 -->
-            </div> <!-- /Row 2 -->
+                  <button id="reset-button" class="btn btn-danger" title="Reset editor" aria-label="Reset editor"
+                    tabindex="0">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    <span class="visually-hidden">Reset</span>
+                    <span class="ps-2">Reset</span>
+                  </button>
+
+                </div>
+
+              </div>
+            </div>
+
           </div> <!-- /#editor-header-2 -->
 
           <div id="editor-body" class="card-body">
             <!-- Editor Textarea -->
-            <textarea id="editor" class="form-control" rows="15" aria-label="PHP Code Editor" tabindex="0" aria-live="polite" aria-describedby="editor-statusbar">
+            <textarea id="editor" class="form-control" rows="15" aria-label="PHP Code Editor" tabindex="0"
+              aria-live="polite" aria-describedby="editor-statusbar">
 &lt;?php
 
 // This example shows how to get the PHP version and list all loaded PHP extensions.
@@ -293,12 +340,14 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
             <span id="statusbar-cursor">Ln: 1, Col: 1</span>
             <span id="statusbar-size">Size: 0 bytes</span>
             <span id="statusbar-fontsize" class="d-flex align-items-center ms-3">
-              <button id="font-decrease" class="btn btn-sm btn-outline-light px-2 py-0 me-1" title="Decrease font size" tabindex="0">
+              <button id="font-decrease" class="btn btn-sm btn-outline-light px-2 py-0 me-1" title="Decrease font size"
+                tabindex="0">
                 <span class="visually-hidden">Decrease font size</span>A
               </button>
               <span id="font-size-value" class="mx-1"
                 style="min-width:2.5em;display:inline-block;text-align:center;">14px</span>
-              <button id="font-increase" class="btn btn-sm btn-outline-light px-2 py-0 ms-1" title="Increase font size" tabindex="0">
+              <button id="font-increase" class="btn btn-sm btn-outline-light px-2 py-0 ms-1" title="Increase font size"
+                tabindex="0">
                 <span class="visually-hidden">Increase font size</span>A
               </button>
             </span>
@@ -311,11 +360,14 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
 
         <!-- Documentation Panel -->
         <div id="docs-panel" class="card bg-dark" role="region" aria-label="Documentation Panel">
-          <div id="docs-panel-header" class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
+          <div id="docs-panel-header"
+            class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
             style="overflow: hidden; height: 60px;">
             <div class="d-flex align-items-center">
               <i class="bi bi-journal-text fs-3" aria-hidden="true"></i>
-              <span class="fw-bold fs-4 ps-2"><h2 class="d-inline m-0 p-0" style="font-size:inherit;">PHP Function Reference</h2></span>
+              <span class="fw-bold fs-4 ps-2">
+                <h2 class="d-inline m-0 p-0" style="font-size:inherit;">PHP Function Reference</h2>
+              </span>
             </div>
           </div>
           <div id="docs-panel-footer" class="card-body py-2 px-3">
@@ -329,7 +381,8 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
         <div id="output-panels">
 
           <!-- Output Panel -->
-          <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 220px;" role="region" aria-label="Output Panel">
+          <div id="standard-output-card" class="card bg-dark h-100" style="min-height: 220px;" role="region"
+            aria-label="Output Panel">
 
             <div id="standard-output-header"
               class="card-header bg-success text-white d-flex justify-content-between align-items-center"
@@ -337,7 +390,9 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
               <!-- Panel Name -->
               <div class="d-flex align-items-center">
                 <i class="bi bi-code-slash fs-3" aria-hidden="true"></i>
-                <span class="fw-bold fs-4 p-2"><h2 class="d-inline m-0 p-0" style="font-size:inherit;">Output</h2></span>
+                <span class="fw-bold fs-4 p-2">
+                  <h2 class="d-inline m-0 p-0" style="font-size:inherit;">Output</h2>
+                </span>
               </div>
               <!-- Toggle Output Type: raw text or HTML -->
               <div class="form-check form-switch text-white ms-3">
@@ -359,7 +414,8 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
               </div>
             </div>
             <div id="standard-output-body" class="card-body" aria-live="polite">
-              <pre id="standard-output" class="p-2 border border-dark rounded pre-direct text-white" aria-label="Standard Output" tabindex="0">Ready!</pre>
+              <pre id="standard-output" class="p-2 border border-dark rounded pre-direct text-white"
+                aria-label="Standard Output" tabindex="0">Ready!</pre>
             </div>
 
           </div> <!-- /#standard-output -->
@@ -368,7 +424,8 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
           <div class="m-2">&nbsp;</div>
 
           <!-- Errors Panel -->
-          <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 220px;" role="region" aria-label="Error Panel">
+          <div id="standard-error-output-card" class="card bg-dark h-100" style="min-height: 220px;" role="region"
+            aria-label="Error Panel">
 
             <!-- Standard Error Output -->
             <div id="standard-error-output-header"
@@ -377,11 +434,14 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
               <!-- Panel Name -->
               <div class="d-flex align-items-center">
                 <i class="bi bi-code-slash fs-3" aria-hidden="true"></i>
-                <span class="fw-bold fs-4 p-2"><h2 class="d-inline m-0 p-0" style="font-size:inherit;">Errors</h2></span>
+                <span class="fw-bold fs-4 p-2">
+                  <h2 class="d-inline m-0 p-0" style="font-size:inherit;">Errors</h2>
+                </span>
               </div>
             </div>
             <div id="standard-error-output-body" class="card-body" aria-live="assertive">
-              <pre id="standard-error-output" class="p-2 border border-dark rounded pre-direct text-white" aria-label="Standard Error Output" tabindex="0">No Errors!</pre>
+              <pre id="standard-error-output" class="p-2 border border-dark rounded pre-direct text-white"
+                aria-label="Standard Error Output" tabindex="0">No Errors!</pre>
             </div>
 
           </div> <!-- /#standard-error-output -->
@@ -404,12 +464,15 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
           <span>© 2025 Jens A. Koch</span>
         </div>
         <div class="mt-1">
-          <a class="text-info mx-2" href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
-             target="_blank" rel="noopener noreferrer">Test PageSpeed</a>
-         <a class="text-info mx-2" href="https://validator.w3.org/nu/?doc=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
+          <a class="text-info mx-2"
+            href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
+            target="_blank" rel="noopener noreferrer">Test PageSpeed</a>
+          <a class="text-info mx-2"
+            href="https://validator.w3.org/nu/?doc=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
             target="_blank" rel="noopener noreferrer">Test HTML</a>
-          <a class="text-info mx-2" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
-             target="_blank" rel="noopener noreferrer">Test CSS</a>
+          <a class="text-info mx-2"
+            href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Findex.html"
+            target="_blank" rel="noopener noreferrer">Test CSS</a>
         </div>
       </div>
     </div>
