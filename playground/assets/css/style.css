@@ -99,6 +99,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 1rem;
+    min-width: 100%;
+    box-sizing: border-box;
 }
 
 #auto-run-dot {
@@ -164,4 +166,66 @@ footer {
     background: linear-gradient(90deg, #4F5B93 0%, #8892BF 100%); /* PHP blue gradient */
     color: #fff;
     border-bottom: 2px solid #4F5B93;
+}
+
+/* Accessibility: visible focus indicator for all interactive elements */
+.focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #ffbf47 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ffbf47;
+  z-index: 2;
+}
+
+.visually-hidden-focusable {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.visually-hidden-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  left: auto;
+  background: #222;
+  color: #fff;
+  padding: 0.5em 1em;
+  z-index: 1000;
+}
+
+/* Prevent layout shift for status bar, dropdowns, and switches */
+#editor-statusbar {
+    min-width: 100%;
+    min-height: 32px;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+#php-example-switcher {
+    min-width: 180px;
+    width: 180px !important;
+    box-sizing: border-box;
+}
+
+.form-check.form-switch {
+    min-width: 120px;
+    box-sizing: border-box;
+}
+
+.form-check-input[type="checkbox"] {
+    min-width: 2.5em;
+    min-height: 1.5em;
+}
+
+/* Avoid late icon/font causing shift */
+#editor-statusbar button, #editor-statusbar span, #editor-statusbar {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
 }

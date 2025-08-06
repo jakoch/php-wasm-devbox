@@ -21,9 +21,7 @@
 - [ ] inline documentation / code guidance by hovering
   - Show PHP function signatures and documentation tooltips in the editor
   - using Monaco’s hover provider or similar?
-- [ ] accessibility improvements: Ensure the playground is usable with screen readers and keyboard navigation.
 - [ ] Show more detailed performance metrics (e.g., memory usage)
-- [ ] Further accessibility improvements (ARIA, tab order, screen reader)
 
 ## Todo
 
@@ -90,4 +88,9 @@
 - [x] Status bar: display Ln:x, Col:y of the cursor and content size in bytes at the bottom of the editor
 - [x] display the "auto run" interval, with run button flash exec indication on the UI; auto_run_interval is a constant.
 - [x] Status bar font size controls: decrease/increase font size of editor (small/big A icons) and keyboard shortcuts Ctrl + "+" and Ctrl + "-"
-- [x] provide "docs" panel underneath code editor panel to list the php functions used with a link to the php manual
+- [x] added a "PHP Function Reference" panel underneath the "Code Editor" panel to list the PHP functions used with a link to the php manual
+- [x] Further accessibility improvements (ARIA, tab order, screen reader)
+  - [x] Improved ARIA roles, labels, and regions for accessibility
+  - [x] Improved tab order and keyboard accessibility for all interactive elements
+  - [x] Updated help section
+
