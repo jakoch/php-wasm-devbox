@@ -54,6 +54,8 @@ jobs:
           cd deploy
           rm -rf .devcontainer node_modules test-results
           rm -f .editorconfig .gitignore package.json biome.json readme.md serve.sh setup.sh
+          rm -rf build-tools
+          rm -f examples/_get_file.php
 
       - name: ✔ Initialize Git and commit
         run: |
