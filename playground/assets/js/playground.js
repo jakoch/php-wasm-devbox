@@ -32,9 +32,19 @@ class PHP {
     #runPhp = null;
     #version = '';
 
+    // Static method to get the base path for WASM modules
+    // This needs to handle gh-pages and local development paths correctly
+    static getBasePath = () => {
+        const match = location.pathname.match(/^\/(php-wasm-devbox)(\/|$)/);
+        return match ? `/${match[1]}` : '';
+    };
+
+    // Base path for WASM modules, set once during class initialization
+    #basePath = PHP.getBasePath();
+
     async #loadWasmBinary(php_version) {
         if (!PHP.#wasmModuleCache[php_version]) {
-            const wasmUrl = `/assets/wasm/php-${php_version}-web.wasm`;
+            const wasmUrl = `${this.#basePath}/assets/wasm/php-${php_version}-web.wasm`;
             PHP.#wasmModuleCache[php_version] = fetch(wasmUrl)
                 .then(res => {
                     if (!res.ok) throw new Error(`Failed to fetch WASM: ${res.statusText}`);
@@ -51,8 +61,8 @@ class PHP {
         }
 
         // load the WASM module dynamically based on the PHP version
-        const moduleUrl = new URL(`../wasm/php-${php_version}-web.mjs`, import.meta.url);
-        const createPhpModule = (await import(moduleUrl.href)).default;
+        const moduleUrl = `${this.#basePath}/assets/wasm/php-${php_version}-web.mjs`;
+        const createPhpModule = (await import(moduleUrl)).default;
 
         // load the WASM binary and cache it
         const wasmBinary = await this.#loadWasmBinary(php_version);
