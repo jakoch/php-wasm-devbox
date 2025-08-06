@@ -24,101 +24,105 @@
  * console.log(result.executionTime);
  */
 class PHP {
+    // Static cache for WASM modules to avoid reloading
+    static #wasmModuleCache = {};
+
     #buffer_stdout = [];
     #buffer_stderr = [];
     #runPhp = null;
     #version = '';
-    #wasmModuleCache = {};
 
-    constructor() {
-        // Initialize static properties
-        if (!PHP.buffer_stdout) {
-            PHP.buffer_stdout = [];
-            PHP.buffer_stderr = [];
-            PHP.runPhp = null;
-            PHP.version = '';
-        }
-    }
-
-    async loadWasmBinary(php_version) {
-        if (!this.#wasmModuleCache[php_version]) {
+    async #loadWasmBinary(php_version) {
+        if (!PHP.#wasmModuleCache[php_version]) {
             const wasmUrl = `/assets/wasm/php-${php_version}-web.wasm`;
-            this.#wasmModuleCache[php_version] = fetch(wasmUrl)
-                .then(res => res.arrayBuffer());
+            PHP.#wasmModuleCache[php_version] = fetch(wasmUrl).then(res => res.arrayBuffer());
         }
-        return this.#wasmModuleCache[php_version];
+        return PHP.#wasmModuleCache[php_version];
     }
 
-    async loadWasmModule(php_version) {
-        // if the PHP module is already loaded, return the runPhp function
-        if (PHP.runPhp && PHP.version === php_version) {
-            return PHP.runPhp;
+    async #loadWasmModule(php_version) {
+        // if the PHP module is already loaded, return the runPHP function
+        if (this.#runPhp && this.#version === php_version) {
+            return this.#runPhp;
         }
-        // load the PHP WASM module
+
+        // load the WASM module dynamically based on the PHP version
         const modulePath = `/assets/wasm/php-${php_version}-web.mjs`;
         const createPhpModule = (await import(modulePath)).default;
 
-        const wasmBinary = await this.loadWasmBinary(php_version);
+        // load the WASM binary and cache it
+        const wasmBinary = await this.#loadWasmBinary(php_version);
 
-        // options for the PHP module
+        // set options for the PHP WASM module
         const phpModuleOptions = {
             wasmBinary,
             print: (data) => {
-                if (!data) return
-                if (PHP.buffer_stdout.length) PHP.buffer_stdout.push('\n');
-                PHP.buffer_stdout.push(data);
+                if (!data) return;
+                if (this.#buffer_stdout.length) this.#buffer_stdout.push('\n');
+                this.#buffer_stdout.push(data);
             },
             printErr: (data) => {
-                if (!data) return
-                if (PHP.buffer_stderr.length) PHP.buffer_stderr.push('\n');
-                PHP.buffer_stderr.push(data);
+                if (!data) return;
+                if (this.#buffer_stderr.length) this.#buffer_stderr.push('\n');
+                this.#buffer_stderr.push(data);
             }
         };
 
-        // init the PHP module
+        // initialize the PHP WASM module
         const { ccall } = await createPhpModule(phpModuleOptions);
 
-        // get PHP version
-        PHP.version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
-        //console.log(`PHP wasm ${PHP.version} loaded.`);
+        // get the PHP version
+        this.#version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
 
-        // prepare the runPhp function
-        PHP.runPhp = (code) => ccall("phpw_run", null, ["string"], [`?>${code}`]);
-        return PHP.runPhp;
+        // Create the runPhp function that will execute the PHP code
+        this.#runPhp = (code) => ccall("phpw_run", null, ["string"], [`?>${code}`]);
+
+        return this.#runPhp;
     }
 
     async runPHP(code, php_version) {
-        //console.log(`Running this code with PHP ${php_version}:`, code);
         if (!php_version) {
             throw new Error("Invalid PHP version!");
         }
 
-        // clear buffers
-        PHP.buffer_stdout = [];
-        PHP.buffer_stderr = [];
+        this.#buffer_stdout = [];
+        this.#buffer_stderr = [];
 
         try {
-            const runPhp = await this.loadWasmModule(php_version);
+            const runPhp = await this.#loadWasmModule(php_version);
             const timer = new Timer("PHP Script");
-            const script = code;
 
-            await new Promise((resolve) => {
-                runPhp(script);
-                resolve();
-            });
-
-            //const converted_output = UTF8.read_string(PHP.buffer.join(''));
+            runPhp(code); // directly run
 
             const elapsedTime = timer.stop().totalTime;
             return {
-                output: PHP.buffer_stdout.join(''), // stdout
-                output_error: PHP.buffer_stderr.join(''), // stderr
-                version: PHP.version,
+                output: this.stdout,
+                output_error: this.stderr,
+                version: this.version,
                 executionTime: timer.formatTime(elapsedTime)
             };
         } catch (error) {
             throw new Error(`PHP execution failed: ${error.message}`);
         }
+    }
+
+    get stdout() {
+        return this.#buffer_stdout.join('');
+    }
+
+    get stderr() {
+        return this.#buffer_stderr.join('');
+    }
+
+    get version() {
+        return this.#version;
+    }
+
+    unload() {
+        this.#buffer_stdout = [];
+        this.#buffer_stderr = [];
+        this.#runPhp = null;
+        this.#version = '';
     }
 }
 
