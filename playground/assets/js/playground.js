@@ -28,6 +28,7 @@ class PHP {
     #buffer_stderr = [];
     #runPhp = null;
     #version = '';
+    #wasmModuleCache = {};
 
     constructor() {
         // Initialize static properties
@@ -39,6 +40,15 @@ class PHP {
         }
     }
 
+    async loadWasmBinary(php_version) {
+        if (!this.#wasmModuleCache[php_version]) {
+            const wasmUrl = `/assets/wasm/php-${php_version}-web.wasm`;
+            this.#wasmModuleCache[php_version] = fetch(wasmUrl)
+                .then(res => res.arrayBuffer());
+        }
+        return this.#wasmModuleCache[php_version];
+    }
+
     async loadWasmModule(php_version) {
         // if the PHP module is already loaded, return the runPhp function
         if (PHP.runPhp && PHP.version === php_version) {
@@ -48,8 +58,11 @@ class PHP {
         const modulePath = `/assets/wasm/php-${php_version}-web.mjs`;
         const createPhpModule = (await import(modulePath)).default;
 
+        const wasmBinary = await this.loadWasmBinary(php_version);
+
         // options for the PHP module
         const phpModuleOptions = {
+            wasmBinary,
             print: (data) => {
                 if (!data) return
                 if (PHP.buffer_stdout.length) PHP.buffer_stdout.push('\n');

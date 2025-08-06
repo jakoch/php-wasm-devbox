@@ -94,4 +94,5 @@
   - [x] Improved tab order and keyboard accessibility for all interactive elements
   - [x] Updated help section
 - [x] Highlight PHP syntax and parse errors directly in the code editor
+- [x] Avoid reloading the WASM module in case auto-run interval is active
 
