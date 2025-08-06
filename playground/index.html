@@ -212,19 +212,25 @@
                 <span id="auto-run-interval" class="ms-3 small text-info" style="min-width: 90px;">Interval: 3s</span>
               </div>
 
-              <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;"
-                title="Select PHP version" tabindex="0">
-                <!-- Placeholder option to avoid layout shift -->
-                <option value="" disabled selected>Select PHP Version</option>
-                <!-- Options are dynamically loaded -->
-              </select>
+              <div class="d-flex flex-column align-items-end">
+                <label for="php-version-switcher" class="form-label text-white mb-1" style="font-size:0.95em;">PHP Version</label>
+                <select id="php-version-switcher" class="form-select form-select-sm" style="width: auto;"
+                  title="Select PHP version" tabindex="0">
+                  <!-- Placeholder option to avoid layout shift -->
+                  <option value="" disabled selected>Select PHP Version</option>
+                  <!-- Options are dynamically loaded -->
+                </select>
+              </div>
 
-              <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;"
-                title="Select editor type" tabindex="0">
-                <option value="" disabled>Select Editor</option>
-                <option value="monaco" selected>Monaco</option>
-                <option value="codemirror">CodeMirror</option>
-              </select>
+              <div class="d-flex flex-column align-items-end">
+                <label for="editor-switcher" class="form-label text-white mb-1" style="font-size:0.95em;">Editor</label>
+                <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;"
+                  title="Select editor type" tabindex="0">
+                  <option value="" disabled>Select Editor</option>
+                  <option value="monaco" selected>Monaco</option>
+                  <option value="codemirror">CodeMirror</option>
+                </select>
+              </div>
             </div> <!-- /d-flex -->
           </div> <!-- /#editor-header-1 -->
 
@@ -234,12 +240,15 @@
             <div class="row mt-2">
               <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
 
-                <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;"
-                  title="Select PHP example" tabindex="0">
-                  <!-- Placeholder option to avoid layout shift -->
-                  <option value="" disabled selected>Select Example</option>
-                  <!-- Options are dynamically loaded -->
-                </select>
+                <div class="d-flex flex-column align-items-end">
+                  <label for="php-example-switcher" class="form-label text-white mb-1" style="font-size:0.95em;">Example</label>
+                  <select id="php-example-switcher" class="form-select form-select-sm" style="width: auto;"
+                    title="Select PHP example" tabindex="0">
+                    <!-- Placeholder option to avoid layout shift -->
+                    <option value="" disabled selected>Select Example</option>
+                    <!-- Options are dynamically loaded -->
+                  </select>
+                </div>
 
                 <button id="load-file-button" class="btn btn-secondary" title="Load a file into the editor" tabindex="0">
                   <i class="bi bi-folder" aria-hidden="true"></i><span class="visually-hidden">Load File</span>
