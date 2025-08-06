@@ -93,4 +93,5 @@
   - [x] Improved ARIA roles, labels, and regions for accessibility
   - [x] Improved tab order and keyboard accessibility for all interactive elements
   - [x] Updated help section
+- [x] Highlight PHP syntax and parse errors directly in the code editor
 

@@ -5,6 +5,12 @@
     --bs-light: #f8f9fa;
 }
 
+/* Error marker for CodeMirror PHP errors */
+.php-error-marker {
+  text-decoration: underline wavy red;
+  text-decoration-thickness: 1px;
+}
+
 .navbar {
     position: relative;
     background-color: var(--bs-gray-900);

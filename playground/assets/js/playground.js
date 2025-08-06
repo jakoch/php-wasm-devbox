@@ -45,7 +45,7 @@ class PHP {
             return PHP.runPhp;
         }
         // load the PHP WASM module
-        const modulePath = `../wasm/php-${php_version}-web.mjs`;
+        const modulePath = `/assets/wasm/php-${php_version}-web.mjs`;
         const createPhpModule = (await import(modulePath)).default;
 
         // options for the PHP module
@@ -143,6 +143,14 @@ class CodeEditor {
 
     async init() {
         await this.switchEditor(this.#currentEditor);
+    }
+
+    get editorInstance() {
+        return this.#editorInstance;
+    }
+
+    get currentEditor() {
+        return this.#currentEditor;
     }
 
     getEditorElement() {
@@ -523,6 +531,68 @@ async function loadVersion() {
     }
 }
 
+// --- Error Highlighting Utilities ---
+function parsePhpError(errorOutput) {
+    if (!errorOutput) return null;
+    // Robust regex: match 'on line N' or 'in ... on line N' or 'on line N,'
+    const regex = /on line (\d+)/i;
+    const match = regex.exec(errorOutput);
+    if (match) {
+        const line = parseInt(match[1], 10);
+        // Extract message (first line or up to 'in script')
+        let message = errorOutput.split('\n')[0];
+        // Try to trim after 'in script' for clarity
+        const inScriptIdx = message.indexOf(' in script');
+        if (inScriptIdx !== -1) message = message.slice(0, inScriptIdx);
+        return { line, message };
+    }
+    // Fallback: highlight first line if error detected but no line number
+    if (/parse error|syntax error|fatal error|unexpected/i.test(errorOutput)) {
+        let message = errorOutput.split('\n')[0];
+        return { line: 1, message };
+    }
+    return null;
+}
+
+function setEditorErrorMarker(editorInstance, editorType, errorInfo) {
+    if (!editorInstance) return;
+    if (!errorInfo) {
+        // Clear markers
+        if (editorType === "monaco" && window.monaco) {
+            const model = editorInstance.getModel();
+            window.monaco.editor.setModelMarkers(model, "php", []);
+        } else if (editorType === "codemirror") {
+            if (editorInstance._phpErrorMarks) {
+                editorInstance._phpErrorMarks.forEach(mark => mark.clear());
+            }
+            editorInstance._phpErrorMarks = [];
+        }
+        return;
+    }
+    const { line, message } = errorInfo;
+    if (editorType === "monaco" && window.monaco) {
+        const model = editorInstance.getModel();
+        window.monaco.editor.setModelMarkers(model, "php", [{
+            startLineNumber: line,
+            endLineNumber: line,
+            startColumn: 1,
+            endColumn: 1000,
+            message,
+            severity: window.monaco.MarkerSeverity.Error
+        }]);
+    } else if (editorType === "codemirror") {
+        if (!editorInstance._phpErrorMarks) editorInstance._phpErrorMarks = [];
+        editorInstance._phpErrorMarks.forEach(mark => mark.clear());
+        editorInstance._phpErrorMarks = [];
+        const doc = editorInstance.getDoc ? editorInstance.getDoc() : editorInstance;
+        const lineIdx = line - 1;
+        if (doc.getLine(lineIdx) != null) {
+            const mark = doc.markText({ line: lineIdx, ch: 0 }, { line: lineIdx, ch: doc.getLine(lineIdx).length }, { className: 'php-error-marker', title: message });
+            editorInstance._phpErrorMarks.push(mark);
+        }
+    }
+}
+
 // Setup Playground Interactions
 document.addEventListener("DOMContentLoaded", async () => {
     const php = new PHP();
@@ -598,6 +668,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         setTimeout(() => runButton.classList.remove('run-flash'), 400);
     }
 
+    function handlePhpRunResult(result) {
+        if (uiElements.isOutputModeHtml) {
+            uiElements.outputHtml = result.output;
+        } else {
+            uiElements.output = result.output;
+        }
+        uiElements.output_error = result.output_error;
+        uiElements.phpVersionDisplay = result.version;
+        uiElements.perfDataDisplay = result.executionTime;
+        // Highlight error in editor if present
+        let errorInfo = parsePhpError(result.output_error);
+        if (!errorInfo) errorInfo = parsePhpError(result.output);
+        setEditorErrorMarker(editor.editorInstance, editor.currentEditor, errorInfo);
+    }
+
+    function handlePhpRunError(err) {
+        uiElements.output_error = err.message;
+        setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
+    }
+
     function startAutoRun() {
         if (runInterval) clearInterval(runInterval);
         runInterval = setInterval(async () => {
@@ -607,16 +697,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             flashRunButton();
             try {
                 const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
-                if (uiElements.isOutputModeHtml) {
-                    uiElements.outputHtml = result.output;
-                } else {
-                    uiElements.output = result.output;
-                }
-                uiElements.output_error = result.output_error;
-                uiElements.phpVersionDisplay = result.version;
-                uiElements.perfDataDisplay = result.executionTime;
+                handlePhpRunResult(result);
             } catch (err) {
-                uiElements.output_error = err.message;
+                handlePhpRunError(err);
             }
             autoRunExecuting = false;
             setRunButtonDisabled(false);
@@ -646,20 +729,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             const phpVersion = uiElements.phpVersionDropdown;
             if (!phpVersion) {
                 uiElements.output_error = "Please select a PHP version.";
+                setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
                 setRunButtonDisabled(false);
                 return;
             }
             const result = await php.runPHP(editor.getContent(), phpVersion);
-            if (uiElements.isOutputModeHtml) {
-                uiElements.outputHtml = result.output;
-            } else {
-                uiElements.output = result.output;
-            }
-            uiElements.output_error = result.output_error;
-            uiElements.phpVersionDisplay = result.version;
-            uiElements.perfDataDisplay = result.executionTime;
+            handlePhpRunResult(result);
         } catch (err) {
-            uiElements.output_error = err.message;
+            handlePhpRunError(err);
         }
         setRunButtonDisabled(false);
     });
@@ -681,14 +758,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const phpVersionDropdown = document.getElementById("php-version-switcher");
     phpVersionDropdown.addEventListener("change", async (event) => {
         const result = await php.runPHP(editor.getContent(), event.target.value);
-        if(uiElements.isOutputModeHtml) {
-            uiElements.outputHtml = result.output;
-        } else {
-            uiElements.output = result.output;
-        }
-        uiElements.output_error = result.output_error;
-        uiElements.phpVersionDisplay = result.version;
-        uiElements.perfDataDisplay = result.executionTime;
+        handlePhpRunResult(result);
     });
 
     // php example switcher
@@ -713,6 +783,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             content = await response.text();
         }
         editor.setContent(content);
+        setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
     });
 
     /* Output */
