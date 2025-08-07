@@ -1,0 +1,3 @@
+# Use Git LFS to manage large binary .wasm files in this folder (no diffs or merges).
+# If LFS is not available, these files will be treated as binary and not diffed or merged.
+playground/assets/wasm/*.wasm filter=lfs diff=lfs merge=lfs binary
