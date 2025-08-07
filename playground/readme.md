@@ -2,6 +2,32 @@
 
 ## Backlog (Ideas)
 
+- [ ] "Multi Version Run"
+  - Allow users to execute the same code against multiple PHP versions simultaneously.
+  - Move the execution controls (e.g., Run button, PHP version selector) from the "Code Editor" panel into a dedicated "PHP" panel.
+  - Enable users to add multiple PHP version rows (via a plus button), where each row provides its own "Run" button and PHP version selector.
+  - Each row displays its own separate "Output" panel, showing the result for the selected PHP version.
+  - Optionally, provide a "Run All" button to execute the code across all configured PHP versions at once.
+  - Useful for comparing output, performance, or compatibility between PHP versions.
+- [ ] "Diff Output of Multi Version Run" (requires "Multi Version Run")
+  - After running the same code across multiple PHP versions, provide a way to visually compare (diff) the outputs.
+  - Highlight differences between the outputs of each PHP version in a side-by-side or unified diff view.
+  - Useful for quickly spotting behavioral or output changes between PHP versions.
+  - Optionally, allow users to select which versions to compare.
+- [ ] Store the PHP WASM modules compressed (either gz or brotli)
+  - Compress each WASM module as part of the build or release workflow (e.g., produce both `.wasm.gz` and `.wasm.br` files).
+  - Serve the pre-compressed files directly, letting the server set the correct `Content-Encoding` header based on the client's `Accept-Encoding` request.
+  - This avoids on-the-fly compression, reduces server CPU usage, and speeds up downloads for users.
+  - Update the module index (e.g., `PHP-WASM-Modules-Index.json`) to include links and checksums for each compression format.
+  - Ensure the playground loader can fetch and decompress the modules in the browser if needed (most browsers support gzipped WASM natively).
+  - Optionally, provide a fallback to the uncompressed `.wasm` if the client does not support compression.
+- [ ] Find a way to not store the PHP WASM modules in the git repository (avoid repo bloat)
+  - the wasm modules are large (3,5MB+) and only grow, if more extensions are enabled
+  - also the number is multiplied by the supported PHP version range
+  - maybe store them as Github Releases and use a workflow to build a "PHP-WASM-Modules-Index.json"
+  - The playground fetches this index at runtime to display available PHP versions
+  - As gh-pages has a pre-deploy step, we can transfer all or "a requested" PHP WASM module
+  - Optionally, support fallback mirrors (e.g., Cloudflare R2, S3, jsDelivr) for redundancy and faster downloads.
 - [ ] Open in another playground (transfer code to another playground)
 - [ ] Document settings:
   - [ ] Max execution time
