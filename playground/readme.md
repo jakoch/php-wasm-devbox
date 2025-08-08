@@ -71,6 +71,12 @@
   - [ ] **Won't implement** due to storage concerns
   - [ ] **Unresolved:** Where to store shared code? Possibly use another playground or code paste service
   - [ ] **Too much work:** Need content moderation to prevent abuse
+- [ ] "Create Issue" directly against PHP Issue Tracker with the not working example included
+  - Allow users to quickly report bugs or incompatibilities by creating a pre-filled issue on the official PHP Issue Tracker.
+  - Automatically include the current code example, PHP version, and output/error in the issue template.
+  - This feature depends on the URL sharing capability, since the code and settings must be reproducible by others.
+  - Even if the code is embedded in the issue, a shareable link helps maintain context and enables easy reproduction.
+  - Consider privacy and security: warn users that their code and output will be publicly
 - [ ] Automatic insertion of opening PHP tag:
   - [ ] If the user forgets to add `<?php`, prepend it automatically
   - [ ] When the user clears the editor, add `<?php` automatically on line 1
