@@ -817,6 +817,53 @@ document.addEventListener("DOMContentLoaded", async () => {
         setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
     });
 
+    // Reset button: load the default hello world example and clear outputs/errors
+    const resetButton = document.getElementById("reset-button");
+    if (resetButton) {
+        resetButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            // Clear output and error markers
+            try {
+                uiElements.output = '';
+                uiElements.output_error = '';
+                uiElements.phpVersionDisplay = '';
+                uiElements.perfDataDisplay = '';
+                setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
+
+                // Attempt to load the hello_world example from examples folder
+                let content = '';
+                const exampleName = 'hello_world';
+                const isGithubPages = location.hostname.endsWith('github.io');
+                if (isGithubPages) {
+                    const resp = await fetch(`examples/${exampleName}.php`);
+                    if (resp.ok) content = await resp.text();
+                } else {
+                    // When a backend is available use the helper endpoint if present
+                    try {
+                        const resp = await fetch(`examples/_get_file.php?file=${exampleName}`);
+                        if (resp.ok) content = await resp.text();
+                    } catch (e) {
+                        // fallback to direct file fetch
+                        const resp2 = await fetch(`examples/${exampleName}.php`);
+                        if (resp2.ok) content = await resp2.text();
+                    }
+                }
+
+                // If fetching failed, use a small builtin hello world
+                if (!content) {
+                    content = `<?php\n\n// Hello World example\necho 'Hello World!';\n`;
+                }
+
+                editor.setContent(content);
+                // move focus to editor for keyboard users
+                const editorEl = document.getElementById('editor');
+                editorEl && editorEl.focus && editorEl.focus();
+            } catch (err) {
+                console.error('Reset failed:', err);
+            }
+        });
+    }
+
     /* Output */
 
     // Output mode toggle checkbox (raw or html)

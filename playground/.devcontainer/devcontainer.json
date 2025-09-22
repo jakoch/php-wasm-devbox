@@ -23,13 +23,6 @@
     "forwardPorts": [8000, 3000],
     //"remoteuser": "vscode",
     "remoteUser": "root",
-    // connect to local ollama server
-    "containerEnv": {
-      "OLLAMA_HOST": "http://host.docker.internal:11434"
-    },
-    "remoteEnv": {
-      "OLLAMA_HOST": "http://host.docker.internal:11434"
-    },
     "runArgs": [
       "--add-host=host.docker.internal:host-gateway"
     ]
