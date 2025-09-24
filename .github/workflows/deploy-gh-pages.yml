@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: "Deploy to GitHub Pages"
 
 on:
   # You can manually run this workflow.

@@ -274,7 +274,7 @@ jobs:
               repo: context.repo.repo
             });
             // Find workflow by name
-            const workflowName = "pages-build-deployment";
+            const workflowName = "pages build and deployment";
             const workflow = workflowsData.workflows.find(w => w.name === workflowName);
             if (!workflow) {
               console.log(`❌ No workflow named ${workflowName} found.`);
