@@ -460,7 +460,7 @@ class VersionPanel {
       <!-- PHP version select -->
       <label for="version-select-${this.#id}" class="visually-hidden">PHP Version</label>
       <select id="version-select-${this.#id}" class="form-select form-select-sm w-auto">
-        <option disabled selected>Select Version</option>
+        <option disabled selected value="">Select Version</option>
         ${availableVersions.map(v => `<option value="${v}">PHP ${v}</option>`).join('')}
       </select>
 
