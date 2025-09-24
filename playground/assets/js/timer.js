@@ -116,3 +116,5 @@ class Timer {
         return timer.stop();
     }
 }
+
+export { Timer };

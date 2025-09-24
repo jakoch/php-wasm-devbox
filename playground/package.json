@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "biome": "^0.3.3",
-    "playwright": "^1.54.1"
+    "playwright": "^1.55.1"
   },
   "dependencies": {
     "node": "^23.11.1"

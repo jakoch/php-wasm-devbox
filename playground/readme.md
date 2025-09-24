@@ -51,6 +51,12 @@
 
 ## Todo
 
+- [ ] find a save-format, which allows to save a multi-run scenario
+   - aka save "differential run scenario"
+   - this means to save the code
+   - save the selected PHP versions
+   - so that you can "replay" the multi-version run
+- [ ] add button "Format" next to run, which formats the code in a basic fashion
 - [ ] add "Performance" tab
   - for each version display: version, system time, user time, memory
 - [ ] provide "opcodes" tab to see the instruction in the PHP VM
@@ -84,7 +90,7 @@
 
 ## In-Progress
 
-- [ ] Editor: Run code using multiple PHP-WASM modules
+- [ ] Extend Editor: Provide a "Multi-Run Editor" tab, which allows to run code using multiple PHP-WASM modules
 - [ ] Builder: compile multiple PHP-WASM modules
   - [ ] use PHP version as DOCKER argument
 - [ ] support only "Currently Supported Version" of PHP

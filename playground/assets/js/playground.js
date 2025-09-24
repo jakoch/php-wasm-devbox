@@ -104,16 +104,17 @@ class PHP {
 
         try {
             const runPhp = await this.#loadWasmModule(php_version);
-            const timer = new Timer("PHP Script");
+            const startTime = performance.now();
 
             runPhp(code); // directly run
 
-            const elapsedTime = timer.stop().totalTime;
+            const endTime = performance.now();
+            const elapsedTime = endTime - startTime;
             return {
                 output: this.stdout,
                 output_error: this.stderr,
                 version: this.version,
-                executionTime: timer.formatTime(elapsedTime)
+                executionTime: Timer.prototype.formatTime(elapsedTime)
             };
         } catch (error) {
             throw new Error(`PHP execution failed: ${error.message}`);
@@ -198,11 +199,11 @@ class CodeEditor {
         if (this.#editorInstance && typeof this.#editorInstance.getValue === "function") {
             return this.#editorInstance.getValue();
         }
-        return editor?.value || "";
+        return editor ? editor.value : "";
     }
 
     setContent(content) {
-        if (this.#editorInstance?.setValue) {
+        if (this.#editorInstance && typeof this.#editorInstance.setValue === "function") {
             this.#editorInstance.setValue(content);
             return;
         }
@@ -360,8 +361,15 @@ class CodeEditor {
 
                     const newEditor = document.createElement("div");
                     newEditor.id = "editor";
-                    //newEditor.className = "resizable-content";
-                    newEditor.style.height = "100%"; // Allow flexbox/CSS to control height
+                    // preserve the current editor element height so Monaco can compute
+                    // its layout correctly on first render
+                    try {
+                        const rect = editor.getBoundingClientRect();
+                        const height = (rect && rect.height) ? Math.round(rect.height) : editor.offsetHeight || 300;
+                        newEditor.style.height = height + 'px';
+                    } catch (e) {
+                        newEditor.style.height = "300px";
+                    }
                     editor.replaceWith(newEditor);
 
                     const monacoInstance = monaco.editor.create(newEditor, {
@@ -378,7 +386,14 @@ class CodeEditor {
                         lineNumbers: "on"
                     });
 
-                    resolve(monacoInstance);
+                    // Delay layout/update to allow browser to paint and compute sizes
+                    setTimeout(() => {
+                        try {
+                            monacoInstance.updateOptions({ lineNumbers: "on" });
+                            monacoInstance.layout();
+                        } catch (e) {}
+                        resolve(monacoInstance);
+                    }, 50);
                 } catch (error) {
                     reject(error);
                 }
@@ -491,8 +506,8 @@ const uiElements = {
 };
 
 function compareVersions(a, b) {
-  const aParts = a.version.split('.').map(Number);
-  const bParts = b.version.split('.').map(Number);
+  const aParts = a.split('.').map(Number);
+  const bParts = b.split('.').map(Number);
   for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
     const aNum = aParts[i] || 0;
     const bNum = bParts[i] || 0;
@@ -518,13 +533,13 @@ async function loadPhpVersions() {
     // Populate the dropdown with the versions
     for (const version of versions) {
         const option = document.createElement('option');
-        option.value = version.version;
-        option.textContent = "PHP " + version.version; // label the option with "PHP " prefix
+        option.value = version;
+        option.textContent = "PHP " + version; // label the option with "PHP " prefix
         phpVersionDropdown.appendChild(option);
     }
     // Set the default version to the latest one
     if (versions.length > 0) {
-        phpVersionDropdown.value = versions[0].version; // Set the first version as default
+        phpVersionDropdown.value = versions[0]; // Set the first version as default
     }
 }
 
@@ -891,7 +906,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         fontDecrease.addEventListener("click", () => editor.setFontSize(editor.getFontSize() - 1));
         fontIncrease.addEventListener("click", () => editor.setFontSize(editor.getFontSize() + 1));
     }
-    // Keyboard shortcuts for font size
+
+    // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
             if (e.key === "+" || e.key === "=") {
@@ -901,6 +917,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 editor.setFontSize(editor.getFontSize() - 1);
                 e.preventDefault();
             }
-        }
+	}
     });
 });
