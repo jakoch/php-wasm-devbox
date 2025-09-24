@@ -12,6 +12,8 @@
  *  - output mode toggle
  */
 
+import { Timer } from './timer.js';
+
 /**
  * The class PHP is used to manage the PHP WASM module and its interactions.
  *
@@ -114,7 +116,7 @@ class PHP {
                 output: this.stdout,
                 output_error: this.stderr,
                 version: this.version,
-                executionTime: Timer.prototype.formatTime(elapsedTime)
+                executionTime: Timer.formatTime(elapsedTime)
             };
         } catch (error) {
             throw new Error(`PHP execution failed: ${error.message}`);

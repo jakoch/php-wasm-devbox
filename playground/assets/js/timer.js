@@ -49,7 +49,7 @@ class Timer {
      * @param {string} [unit='ms'] - Unit to use ('ms' or 's')
      * @returns {string} Formatted time string
      */
-    formatTime(ms, unit = 'ms') {
+    static formatTime(ms, unit = 'ms') {
         if (!Number.isFinite(ms)) {
             throw new Error('Invalid time value provided');
         }
