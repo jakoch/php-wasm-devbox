@@ -616,15 +616,10 @@ function compareVersions(a, b) {
 
 // Fetch the PHP versions from the static JSON file
 async function loadPhpVersions() {
-    try {
-        const response = await fetch(`${PHP.getBasePath()}assets/wasm/php-versions.json`);
-        const versions = await response.json();
-        versions.sort(compareVersions);
-        availableVersions = versions;
-    } catch (error) {
-        console.error("Error loading PHP versions:", error);
-        availableVersions = []; // or some default
-    }
+    const response = await fetch('assets/wasm/php-versions.json');
+    const versions = await response.json();
+    versions.sort(compareVersions);
+    availableVersions = versions;
 }
 
 // Load the examples list json and populate the dropdown
