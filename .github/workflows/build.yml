@@ -62,7 +62,7 @@ jobs:
         run: echo "TERM=xterm-256color" >> "$GITHUB_ENV"
 
       - name: 🔍 Run hadolint
-        uses: hadolint/hadolint-action@v3.1.0 # https://github.com/hadolint/hadolint-action
+        uses: hadolint/hadolint-action@v3.3.0 # https://github.com/hadolint/hadolint-action
         with:
           dockerfile: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
           no-fail: true
