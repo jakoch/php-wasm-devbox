@@ -170,7 +170,7 @@ jobs:
           7z a -tzip -mx9 "${{ env.PHP_WASM_ARTIFACT_ZIPFILE }}" "php-wasm"
 
       - name: 📦 🚀 Upload Artifact
-        uses: actions/upload-artifact@v5 # https://github.com/actions/upload-artifact
+        uses: actions/upload-artifact@v6 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.PHP_WASM_ARTIFACT_NAME }}
           path: ${{ env.PHP_WASM_ARTIFACT_ZIPFILE}}
