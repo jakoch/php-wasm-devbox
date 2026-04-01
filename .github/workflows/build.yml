@@ -86,7 +86,7 @@ jobs:
       # generate metadata for the build-stage image
       - name: ✏ Setup Docker Metadata
         id: metadata-build-stage
-        uses: docker/metadata-action@v5 # https://github.com/docker/metadata-action
+        uses: docker/metadata-action@v6 # https://github.com/docker/metadata-action
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
@@ -103,7 +103,7 @@ jobs:
       # generate metadata for the deploy image
       - name: ✏ Setup Docker Metadata
         id: metadata-deploy-stage
-        uses: docker/metadata-action@v5 # https://github.com/docker/metadata-action
+        uses: docker/metadata-action@v6 # https://github.com/docker/metadata-action
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
