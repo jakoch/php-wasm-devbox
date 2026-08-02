@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHP-WASM Multi-Run Editor</title>
+  <meta name="description" content="PHP-WASM Multi-Run Editor for running code against multiple PHP versions simultaneously.">
+  <!-- Open Graph -->
+  <!--<meta property="og:url" content="https://...">-->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PHP-WASM Multi-Run Editor">
+  <meta property="og:description"
+    content="PHP-WASM Multi-Run Editor for running code against multiple PHP versions simultaneously.">
+  <meta property="og:site_name" content="PHP Multi-Run Editor">
+  <!--<meta property="og:image" content="https://.../logo.png">-->
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@jens-andre-koch">
+  <meta name="twitter:title" content="PHP-WASM Multi-Run Editor">
+  <meta name="twitter:description"
+    content="PHP-WASM Multi-Run Editor for running code against multiple PHP versions simultaneously.">
+  <!--<meta name="twitter:image" content="https://.../logo.png">-->
+  <link rel="shortcut icon" href="assets/favicon.ico">
+  <!-- Accessibility styles moved to assets/css/style.css -->
+</head>
+
+<body id="bootstrap-body-override">
+  <!-- Skip Links for Accessibility -->
+  <a href="#editor-container" class="visually-hidden-focusable">Skip to Editor</a>
+  <a href="#multi-run-panels" class="visually-hidden-focusable">Skip to Multi-Run Panels</a>
+
+  <!-- NoScript Warning -->
+  <noscript>
+    <div class="alert alert-danger text-center" role="alert">
+      <p>This application requires JavaScript to be enabled.</p>
+      <p>Please enable JavaScript in your browser settings and reload the page.</p>
+    </div>
+  </noscript>
+  <!-- Header Navbar -->
+  <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow border-bottom border-dark">
+    <nav class="container-fluid bd-gutter flex-wrap flex-lg-nowrap ms-5">
+      <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Multi-Run Editor">
+        <i class="bi bi-filetype-php fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">PHP logo</span>
+        <span class="fw-bold fs-3">
+          <h1 class="d-inline m-0 p-0" style="font-size:inherit;">PHP-WASM Multi-Run Editor</h1>
+        </span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bdNavbar"
+        aria-controls="bdNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-start" id="bdNavbar">
+        <!-- Left section -->
+        <ul class="navbar-nav me-auto bd-navbar-nav pt-2 py-lg-0 ms-5">
+          <li class="nav-item">
+            <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="index.html">
+              <i class="bi bi-pencil-square fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Single Editor</span>Single Editor
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="multi-run-link" class="nav-link active fs-4 d-flex align-items-center" href="#" aria-current="page">
+              <i class="bi bi-pencil-square fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Multi-Run Editor</span>Multi-Run Editor
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="help-link" class="nav-link fs-4 d-flex align-items-center" href="#">
+              <i class="bi bi-question-octagon fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Help</span>Help
+            </a>
+          </li>
+        </ul>
+        <!-- Right section -->
+        <ul class="navbar-nav ms-auto bd-navbar-nav pt-2 py-lg-0 me-5">
+          <li class="nav-item">
+            <a id="issues-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/jakoch/php-wasm-devbox/issues">
+              <i class="bi bi-github fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Report
+                Issue</span>Report Issue
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="star-github-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/jakoch/php-wasm-devbox">
+              <i class="bi bi-star fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">Star on
+                GitHub</span>Star on GitHub
+            </a>
+          </li>
+          <li class="nav-item">
+            <a id="donate-github-link" class="nav-link fs-4 d-flex align-items-center"
+              href="https://github.com/sponsors/jakoch">
+              <i class="bi bi-currency-dollar fs-3 me-2" aria-hidden="true"></i><span
+                class="visually-hidden">Donate</span>Donate
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <div id="main-container" class="m-4 p-4" role="main" aria-label="PHP-WASM Multi-Run Editor Main Content">
+
+    <!-- Help -->
+    <div id="help-container" class="card bg-dark h-100 border border-dark bg-dark d-none pb-4 mb-4 fs-4" role="region"
+      aria-label="Help Panel">
+      <div id="help-header" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-question-octagon fs-4" aria-hidden="true"></i>
+          <span class="fw-bold fs-4 ps-2">
+            <h2 class="d-inline m-0 p-0" style="font-size:inherit;">Help</h2>
+          </span>
+        </div>
+      </div>
+      <div id="help-body" class="card-body text-white">
+        <h3>Welcome to the PHP-WASM Multi-Run Editor!</h3>
+        <p>The PHP-WASM Multi-Run Editor allows you to run the same PHP code against multiple PHP versions simultaneously for comparison.</p>
+        <p>This execution mode is often called n-version execution. It allows differential testing of PHP code across versions.</p>
+        <p>The PHP-WASM module is the PHP interpreter compiled to WebAssembly using Emscripten. It allows you to run PHP code directly in the browser.</p>
+        <h4>Who is this for?</h4>
+        <p>This app is for anyone that wants to run PHP snippets or inspect the inner workings of the PHP VM across multiple versions.</p>
+        <p>It has been designed with the idea of an in-browser testing ground for small snippets against multiple PHP versions in mind.</p>
+        <p>The inspiration is of course the well-known 3v4l.org playground project, where you can do the same but against hosted PHP versions.</p>
+        <p>Here everything runs in the browser, and once the web application is loaded, it will even work without internet connection.</p>
+        <h4>Usage</h4>
+        <p>Write your PHP code in the shared editor on the left. Add PHP version panels on the right using the "Add Version" button. Each panel allows you to select a PHP version and run the code against it. Click "Run All" to execute across all versions at once.</p>
+        <p>Keep in mind to start with the usual PHP opening tag: <code>&lt;?php</code></p>
+        <p>For issues related to the PHP-WASM module or this playground, please visit:
+          <i class="bi bi-github fs-3"></i>
+          <a href="https://github.com/jakoch/php-wasm-devbox/issues">github.com/jakoch/php-wasm-devbox/issues</a>
+        </p>
+        <h4><u>Interactions</u></h4>
+        <div class="row">
+          <div class="col-3 fw-bold">Run Button</div>
+          <div class="col-9">Executes the PHP code using the selected PHP-WASM module for that panel.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Run All Button</div>
+          <div class="col-9">Executes the PHP code across all configured PHP versions at once.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Add Version Button</div>
+          <div class="col-9">Adds a new PHP version panel for running code against another version.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Remove Button</div>
+          <div class="col-9">Removes the PHP version panel.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Version Dropdown</div>
+          <div class="col-9">You can switch the PHP Version for each panel using the PHP version selector.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Editor Dropdown</div>
+          <div class="col-9">You can switch between CodeMirror and Monaco editors using the editor type selector.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Example Dropdown</div>
+          <div class="col-9">You can select a PHP example from the dropdown to load it into the editor.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Load File Button</div>
+          <div class="col-9">Loads a PHP file into the editor. The files are loaded from the examples folder.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Save Button</div>
+          <div class="col-9">Saves the PHP code to file. The file name format is "index-YYYYMMDD-HHMM.php".</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Copy Button</div>
+          <div class="col-9">Copies the content of the code editor to the clipboard.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Reset Button</div>
+          <div class="col-9">Resets the PHP code editor to a basic hello world example.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Output Mode Toggle</div>
+          <div class="col-9">You can toggle the output mode and select between raw text and HTML rendering.</div>
+        </div>
+        <h4><u>Status Displays</u></h4>
+        <div class="row">
+          <div class="col-3 fw-bold">PHP Version Display</div>
+          <div class="col-9">Shows the PHP version used for executing your PHP code.</div>
+        </div>
+        <div class="row">
+          <div class="col-3 fw-bold">Performance Display</div>
+          <div class="col-9">Shows how long it took to run your PHP code.</div>
+        </div>
+        <h4><u>Keyboard Shortcuts & Accessibility</u></h4>
+        <ul>
+          <li><strong>Tab / Shift+Tab</strong>: Move focus between all interactive controls and panels</li>
+          <li><strong>Enter / Space</strong>: Activate focused button, toggle, or dropdown</li>
+          <li><strong>Ctrl + +</strong>: Increase editor font size</li>
+          <li><strong>Ctrl + -</strong>: Decrease editor font size</li>
+          <li><strong>Ctrl + S</strong>: Save editor content as a PHP file</li>
+          <li><strong>Ctrl + C</strong>: Copy editor content to the clipboard</li>
+          <li><strong>Skip Links</strong>: Use Tab at the top of the page to jump directly to Editor or Output</li>
+          <li><strong>Screen Reader Support</strong>: Output and error panels announce updates automatically; all icons and controls have accessible labels</li>
+          <li><strong>All features</strong> are fully usable with keyboard and screen reader</li>
+        </ul>
+      </div>
+    </div> <!-- /#help-container -->
+
+    <!-- Editor and Multi-Run Panels -->
+    <div id="editor-container" class="row" role="region" aria-label="Editor and Multi-Run Panels">
+      <!-- Left Side (Shared Editor) -->
+      <div id="left" class="col-6" role="region" aria-label="Shared Editor Panel">
+        <div id="editor-wrapper" class="card bg-dark h-100">
+
+          <!-- Row 1: Code Editor Controls -->
+          <div id="editor-header-1"
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            style="overflow: hidden; height: 60px;">
+
+            <!-- Left: Panel Name = Code Editor -->
+            <div class="d-flex align-items-center">
+              <i class="bi bi-filetype-php fs-3" aria-hidden="true"></i><span class="visually-hidden">PHP logo</span>
+              <span class="fw-bold fs-4 ps-2">
+                <h2 class="d-inline m-0 p-0" style="font-size:inherit;">Shared Code Editor</h2>
+              </span>
+            </div>
+
+            <!-- Right: Controls -->
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+
+              <button id="run-all-button" class="btn btn-success" title="Run code against all versions" tabindex="0">
+                <i class="bi bi-play-fill" aria-hidden="true"></i>
+                <span class="visually-hidden">Run All</span>
+                <span class="ps-2">Run All</span>
+              </button>
+
+              <label for="editor-switcher" class="form-label text-white mb-1 visually-hidden">Editor</label>
+              <select id="editor-switcher" class="form-select form-select-sm" style="width: auto;"
+                title="Select editor type" tabindex="0">
+                <option value="" disabled>Select Editor</option>
+                <option value="monaco" selected>Monaco</option>
+                <option value="codemirror">CodeMirror</option>
+              </select>
+
+            </div> <!-- /d-flex -->
+          </div> <!-- /#editor-header-1 -->
+
+          <div id="editor-header-2" class="card-header" style="overflow: hidden;">
+
+            <!-- Row 2: Selectors aligned right -->
+            <div class="row mt-2">
+              <div class="col-12 d-flex flex-wrap justify-content-end align-items-end gap-2">
+
+                <!-- Load Example Dropdown -->
+                <div class="d-flex flex-column align-items-end me-2">
+                  <label for="php-example-switcher" class="form-label text-white mb-1 visually-hidden">
+                    Load Example
+                  </label>
+                  <select id="php-example-switcher" class="form-select form-select-sm"
+                    style="width: auto; min-width: 160px;" title="Select a PHP example" tabindex="0"
+                    aria-label="Select a PHP example">
+                    <option value="" disabled selected>Select Example</option>
+                  </select>
+                </div>
+
+                <!-- Action Buttons Grouped -->
+                <div class="btn-group" role="group" aria-label="Editor actions">
+
+                  <button id="load-file-button" class="btn btn-secondary" title="Load file" aria-label="Load file"
+                    tabindex="0">
+                    <i class="bi bi-folder" aria-hidden="true"></i>
+                    <span class="visually-hidden">Load</span>
+                    <span class="ps-2">Load</span>
+                  </button>
+
+                  <button id="save-button" class="btn btn-secondary" title="Save file" aria-label="Save file"
+                    tabindex="0">
+                    <i class="bi bi-save" aria-hidden="true"></i>
+                    <span class="visually-hidden">Save</span>
+                    <span class="ps-2">Save</span>
+                  </button>
+
+                  <button id="copy-button" class="btn btn-secondary" title="Copy code" aria-label="Copy code"
+                    tabindex="0">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                    <span class="visually-hidden">Copy</span>
+                    <span class="ps-2">Copy</span>
+                  </button>
+
+                  <button id="reset-button" class="btn btn-danger" title="Reset editor" aria-label="Reset editor"
+                    tabindex="0">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    <span class="visually-hidden">Reset</span>
+                    <span class="ps-2">Reset</span>
+                  </button>
+
+                </div>
+
+              </div>
+            </div>
+
+          </div> <!-- /#editor-header-2 -->
+
+          <div id="editor-body" class="card-body">
+            <!-- Editor Textarea -->
+            <textarea id="editor" class="form-control" rows="15" aria-label="PHP Code Editor" tabindex="0"
+              aria-live="polite" aria-describedby="editor-statusbar">
+&lt;?php
+
+// This example shows how to get the PHP version and list all loaded PHP extensions.
+
+echo 'PHP Version: ' . phpversion() . "\n \n";
+echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . "\n";
+</textarea>
+          </div> <!-- /#editor-body -->
+
+          <!-- Editor Status Bar -->
+          <div id="editor-statusbar"
+            class="bg-dark text-white px-3 py-2 d-flex justify-content-between align-items-center"
+            style="font-size: 0.95em; min-height: 32px;">
+            <span id="statusbar-cursor">Ln: 1, Col: 1</span>
+            <span id="statusbar-size">Size: 0 bytes</span>
+            <span id="statusbar-fontsize" class="d-flex align-items-center ms-3">
+              <button id="font-decrease" class="btn btn-sm btn-outline-light px-2 py-0 me-1" title="Decrease font size"
+                tabindex="0">
+                <span class="visually-hidden">Decrease font size</span>A
+              </button>
+              <span id="font-size-value" class="mx-1"
+                style="min-width:2.5em;display:inline-block;text-align:center;">14px</span>
+              <button id="font-increase" class="btn btn-sm btn-outline-light px-2 py-0 ms-1" title="Increase font size"
+                tabindex="0">
+                <span class="visually-hidden">Increase font size</span>A
+              </button>
+            </span>
+          </div>
+
+        </div> <!-- /#editor-wrapper -->
+
+        <!-- Spacer -->
+        <div class="m-2">&nbsp;</div>
+
+        <!-- Documentation Panel -->
+        <div id="docs-panel" class="card bg-dark" role="region" aria-label="Documentation Panel">
+          <div id="docs-panel-header"
+            class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
+            style="overflow: hidden; height: 60px;">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-journal-text fs-3" aria-hidden="true"></i>
+              <span class="fw-bold fs-4 ps-2">
+                <h2 class="d-inline m-0 p-0" style="font-size:inherit;">PHP Function Reference</h2>
+              </span>
+            </div>
+          </div>
+          <div id="docs-panel-footer" class="card-body py-2 px-3">
+            <span class="text-light">No PHP functions detected.</span>
+          </div>
+        </div>
+      </div> <!-- /#left -->
+
+      <!-- Right Side (Multi-Run Panels) -->
+      <div id="right" class="col-6" role="region" aria-label="Multi-Run Panels">
+        <div id="multi-run-panels">
+
+          <!-- Add Version Button -->
+          <div class="mb-3">
+            <button id="add-version-button" class="btn btn-primary w-100" title="Add new PHP version panel" tabindex="0">
+              <i class="bi bi-plus-circle" aria-hidden="true"></i>
+              <span class="ps-2">Add PHP Version</span>
+            </button>
+          </div>
+
+          <!-- Version Panels Container -->
+          <div id="version-panels-container">
+            <!-- Version panels will be dynamically added here -->
+          </div>
+
+        </div> <!-- /#multi-run-panels -->
+      </div> <!-- /#right -->
+    </div> <!-- /#editor-container -->
+
+  </div> <!-- /#main-container -->
+
+  <!-- Footer -->
+  <footer class="bg-dark text-center text-lg-start">
+    <div class="container">
+      <div class="text-center p-2">
+        <div>
+          <span id="app-version">PHP-WASM Multi-Run Editor v0.3.0 #g0dm0d3</span>
+          &nbsp;|&nbsp;
+          <a class="text-info" href="https://github.com/jakoch/php-wasm-devbox/">jakoch/php-wasm-devbox</a>
+          &nbsp;|&nbsp;
+          <span>© 2025 Jens A. Koch</span>
+        </div>
+        <div class="mt-1">
+          <a class="text-info mx-2"
+            href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Fmulti.html"
+            target="_blank" rel="noopener noreferrer">Test PageSpeed</a>
+          <a class="text-info mx-2"
+            href="https://validator.w3.org/nu/?doc=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Fmulti.html"
+            target="_blank" rel="noopener noreferrer">Test HTML</a>
+          <a class="text-info mx-2"
+            href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fjakoch.github.io%2Fphp-wasm-devbox%2Fmulti.html"
+            target="_blank" rel="noopener noreferrer">Test CSS</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.7/css/bootstrap.min.css"
+    integrity="sha512-fw7f+TcMjTb7bpbLJZlP8g2Y4XcCyFZW8uy8HsRZsH/SwbMw0plKHFHr99DN3l04VsYNwvzicUX/6qurvIxbxw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css"
+    integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- CodeMirror Style with Monokai Theme -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+    integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css"
+    integrity="sha512-R6PH4vSzF2Yxjdvb2p2FA06yWul+U0PDDav4b/od/oXf9Iw37zl10plvwOXelrjV2Ai7Eo3vyHeyFUjhXdBCVQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- Style (is the last to override)-->
+  <link rel="stylesheet" type="text/css" href="assets/css/style.css">
+  <!-- CodeMirror Editor & Mode -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+    integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/php/php.min.js"
+    integrity="sha512-jZGz5n9AVTuQGhKTL0QzOm6bxxIQjaSbins+vD3OIdI7mtnmYE6h/L+UBGIp/SssLggbkxRzp9XkQNA4AyjFBw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Monaco Editor -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"
+    integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Playground Scripts -->
+  <script type="module" src="assets/js/timer.js"></script>
+  <script type="module" src="assets/js/multi-run.js"></script>
+</body>
+
+</html>

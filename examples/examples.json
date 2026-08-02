@@ -1,0 +1,11 @@
+[
+  { "value": "hello_world", "label": "Hello World" },
+  { "value": "phpinfo", "label": "PHP Info" },
+  { "value": "extensions", "label": "Show Loaded Extensions" },
+  { "value": "array_align", "label": "Array Align Example" },
+  { "value": "binary_to_decimal", "label": "Binary to Decimal" },
+  { "value": "json", "label": "JSON Example" },
+  { "value": "output_types", "label": "Output Types" },
+  { "value": "closure", "label": "Closure Example" },
+  { "value": "ext_dom", "label": "Dom Extension Example" }
+]
