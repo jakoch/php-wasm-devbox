@@ -173,10 +173,11 @@ RUN set -e; \
 # - v: verbose
 # - EXPORTED_FUNCTIONS: list of functions to export
 # - EXPORTED_RUNTIME_METHODS: list of runtime methods to export
-# - ENVIRONMENT=web: compile for web environment
-# - MAXIMUM_MEMORY=128mb: set maximum memory limit
-# - INITIAL_MEMORY=128mb: set initial memory limit
-# - ALLOW_MEMORY_GROWTH=0: disable automatic memory growth
+# - ENVIRONMENT=web,worker,node: target environments
+# - STACK_SIZE=8mb: main thread stack size
+# - INITIAL_MEMORY=256mb: initial heap size
+# - MAXIMUM_MEMORY=2gb: upper bound for heap growth
+# - ALLOW_MEMORY_GROWTH=1: allow the heap to grow
 # - EXPORT_ES6=1: export as ES6 JavaScript module
 # - MODULARIZE=1: export as ES6 JavaScript module
 # - EXPORT_NAME=createPhpModule: export as ES6 JavaScript module
@@ -185,10 +186,21 @@ RUN set -e; \
 # - ASSERTIONS=0: disable assertions
 # - ERROR_ON_UNDEFINED_SYMBOLS=0: disable error on undefined symbols
 #
-# Notes on Memory Limit:
-# - Memory is fixed at 128MB memory limit for performance with no automatic memory growth.
-# Ignore the following warning, automatic memory growth is intentionally disabled:
-# - emcc: warning: MAXIMUM_MEMORY is only meaningful with ALLOW_MEMORY_GROWTH [-Wunused-command-line-argument]
+# Notes on ENVIRONMENT:
+# `node` is included so that test/php-wasm-bridge.test.mjs can load the module
+# and exercise it in CI. It adds a little size but nothing else depends on it;
+# drop it if a browser-only build is preferred.
+#
+# Notes on Memory:
+# The heap is allowed to grow up to MAXIMUM_MEMORY. With growth disabled a
+# script that exhausts the heap aborts the whole Wasm instance, taking the
+# playground down with it and forcing a page reload; growing the heap lets the
+# allocation simply fail instead. The module is a long-lived instance that runs
+# many requests, so its peak usage is not known up front.
+#
+# Notes on STACK_SIZE:
+# The default 64KB stack is too small for real-world PHP. Deep recursion in
+# application code overflows it.
 #
 # Notes on Debugging:
 # - o2: optimization level would trigger a warning: running limited binaryen optimizations
@@ -211,12 +223,13 @@ RUN set -e; \
     -g0 \
     -flto=full \
     -v \
- 	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_exec", "_phpw_run", "_chdir", "_setenv", "_php_embed_init", "_php_embed_shutdown", "_zend_eval_string"]' \
+ 	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_exec", "_phpw_run", "_phpw_init", "_phpw_destroy", "_phpw_request_init", "_phpw_last_error", "_phpw_free", "_phpw_php_version", "_chdir", "_setenv"]' \
  	-s EXPORTED_RUNTIME_METHODS='["ccall", "UTF8ToString", "lengthBytesUTF8", "FS"]' \
- 	-s ENVIRONMENT=web \
- 	-s MAXIMUM_MEMORY=128mb \
-    -s INITIAL_MEMORY=128mb \
-    -s ALLOW_MEMORY_GROWTH=0 \
+ 	-s ENVIRONMENT=web,worker,node \
+ 	-s STACK_SIZE=8mb \
+ 	-s MAXIMUM_MEMORY=2gb \
+    -s INITIAL_MEMORY=256mb \
+    -s ALLOW_MEMORY_GROWTH=1 \
  	-s ASSERTIONS=0 \
     -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
     -s EXPORT_ES6=1 \
@@ -226,8 +239,8 @@ RUN set -e; \
     -s LZ4=1 \
     /local/build/php-wasm-bridge/php-wasm-bridge.o \
     /local/src/php-src/.libs/libphp.a \
- 	/local/install/lib/libxml2.a \
- 	/local/install/lib/libonig.a
+  	/local/install/lib/libxml2.a \
+  	/local/install/lib/libonig.a
 
 #
 # Deploy Stage
