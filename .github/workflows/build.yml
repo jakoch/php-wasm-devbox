@@ -34,6 +34,16 @@ on:
       - 'test/**'
       - 'build-tools/scripts/**'
 
+# Only one build may publish at a time. A run can be part way through pushing
+# images and creating a release when a second push arrives, and cancelling it
+# would leave the tags and the release out of sync. Queued runs are not
+# cancelled, so a build always finishes. Same reasoning as
+# deploy-gh-pages.yml. The group is per-ref so a pull request never blocks a
+# push to main.
+concurrency:
+  group: build-docker-image-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
 
 # ---------------------------------------------------------------------------------------
@@ -45,6 +55,10 @@ jobs:
     name: "Build Docker Image"
     # https://github.com/actions/runner-images
     runs-on: ubuntu-24.04
+    # Compiling PHP for wasm is most of this job, and it happens on every run
+    # that changes the Dockerfile, the bridge or a configure flag. The default
+    # of 360 minutes would let a genuinely stuck build hold a runner for hours.
+    timeout-minutes: 180
 
     permissions:
       contents: write # permit to create a release on Github Releases
@@ -149,6 +163,15 @@ jobs:
             ${{ steps.metadata-build-stage.outputs.tags }}
             php-wasm-build-stage:ci
           labels: ${{ steps.metadata-build-stage.outputs.labels }}
+          # BuildKit cache in the Actions cache service. Without this every run
+          # re-clones php-src and emsdk and recompiles oniguruma, libxml2,
+          # sqlite and PHP from scratch, which is most of the wall time.
+          #
+          # Scoped per stage so the two builds do not overwrite each other's
+          # cache, and scoped to the branch's ref so a pull request cannot
+          # poison main's cache.
+          cache-from: type=gha,scope=build-stage-${{ github.ref }}
+          cache-to: type=gha,mode=max,scope=build-stage-${{ github.ref }}
           push: false
           load: true
 
@@ -182,6 +205,9 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.metadata-deploy-stage.outputs.tags }}
           labels: ${{ steps.metadata-deploy-stage.outputs.labels }}
+          # Separate scope from the build stage, for the same reason.
+          cache-from: type=gha,scope=deploy-stage-${{ github.ref }}
+          cache-to: type=gha,mode=max,scope=deploy-stage-${{ github.ref }}
           push: false
           load: true
 
