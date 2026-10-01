@@ -85,3 +85,8 @@ The following arguments are available for the Dockerfile:
   This start script will also build required JSON data files, which are loaded by the static web page.
 - Visit [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser to access the playground.
 - For the feature roadmap and todos, see the [playground README](./playground/readme.md).
+
+### Limitations
+
+- Fibers: The build uses ``--disable-fiber-asm``, because WASM cannot pause
+  and resume code the way Fibers require.

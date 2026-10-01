@@ -12,13 +12,13 @@ FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2
 # | ARGS                        |
 # +-----------------------------+
 
-ARG PHP_VERSION=8.4.10
+ARG PHP_VERSION=8.5.11
 ARG ONIGURUMA_VERSION=6.9.10
-ARG LIBXML_VERSION=2.13.5
+ARG LIBXML_VERSION=2.15.4
 ARG VLD_VERSION=0.19.1
-ARG EMSCRIPTEN_VERSION=4.0.4
-ARG SQLITE_VERSION=3500300
-ARG SQLITE_SHA256=ec5496cdffbc2a4adb59317fd2bf0e582bf0e6acd8f4aae7e97bc723ddba7233
+ARG EMSCRIPTEN_VERSION=6.0.10
+ARG SQLITE_VERSION=3530400
+ARG SQLITE_SHA256=0e9483900e92cd5de8fd48d16bf9200145a61f7fd5be542a5ac81d8a9516eb9c
 ARG NODE_VERSION=24.21.0
 ARG NODE_SHA256=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
 # VLD is a debug-only extension; it must not end up in the shipped artifact.
@@ -122,7 +122,7 @@ RUN set -e; \
     echo "Compile sqlite3" && \
     mkdir -p /local/src/sqlite && \
     curl -fsSL -o "/tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" \
-      "https://www.sqlite.org/2025/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" && \
+      "https://www.sqlite.org/2026/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" && \
     echo "${SQLITE_SHA256}  /tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" > /tmp/sqlite.sha256 && \
     sha256sum -c /tmp/sqlite.sha256 && \
     tar -xzf "/tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" -C /local/src/sqlite --strip-components=1 && \
@@ -173,7 +173,8 @@ RUN set -e; \
     --with-pdo-sqlite \
     --with-sqlite3 \
     --without-pcre-jit \
-    --without-pear && \
+    --without-pear \
+    ac_cv_func_reallocarray=yes && \
     echo "Compile WASM bridge for PHP" && \
     mkdir -p /local/build/php-wasm-bridge && \
     emcc -O2 \
@@ -249,7 +250,7 @@ RUN set -e; \
     -flto=full \
     -v \
  	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_exec", "_phpw_run", "_phpw_init", "_phpw_destroy", "_phpw_request_init", "_phpw_last_error", "_phpw_free", "_phpw_php_version", "_chdir", "_setenv"]' \
- 	-s EXPORTED_RUNTIME_METHODS='["ccall", "UTF8ToString", "lengthBytesUTF8", "FS"]' \
+ 	-s EXPORTED_RUNTIME_METHODS='["ccall", "UTF8ToString", "lengthBytesUTF8", "FS", "HEAPU8"]' \
  	-s ENVIRONMENT=web,worker,node \
  	-s STACK_SIZE=8mb \
  	-s MAXIMUM_MEMORY=2gb \

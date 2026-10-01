@@ -44,7 +44,7 @@ LINK_FLAGS=(
     -g0
     -flto=full
     -s EXPORTED_FUNCTIONS='["_phpw","_phpw_exec","_phpw_run","_phpw_init","_phpw_destroy","_phpw_request_init","_phpw_last_error","_phpw_free","_phpw_php_version","_chdir","_setenv"]'
-    -s EXPORTED_RUNTIME_METHODS='["ccall","UTF8ToString","lengthBytesUTF8","FS"]'
+    -s EXPORTED_RUNTIME_METHODS='["ccall","UTF8ToString","lengthBytesUTF8","FS","HEAPU8"]'
     -s ENVIRONMENT=web,worker,node
     -s STACK_SIZE=8mb
     -s INITIAL_MEMORY=256mb
