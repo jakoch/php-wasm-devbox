@@ -22,6 +22,17 @@ on:
       - '.devcontainer/**'
       - '.github/workflows/build.yml'
       - 'src/**'
+  # Validate pull requests, including Dependabot's, before they reach main.
+  # Without this the only trigger was a push to main, so a change to the bridge
+  # or the Dockerfile shipped unvalidated. Every publish step below is skipped
+  # for pull_request events.
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/build.yml'
+      - 'src/**'
+      - 'test/**'
+      - 'build-tools/scripts/**'
 
 jobs:
 
@@ -126,10 +137,38 @@ jobs:
           file: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
           target: build-stage
           platforms: linux/amd64
-          tags: ${{ steps.metadata-build-stage.outputs.tags }}
+          # The trailing tag is a stable local name for the bridge test step
+          # below. The metadata tags cannot be used for that: `latest=auto`
+          # only emits the "latest" tag on a push to the default branch, so on a
+          # pull_request there is no predictable name to reference. This tag has
+          # no registry prefix, so the `--all-tags` push below ignores it.
+          tags: |
+            ${{ steps.metadata-build-stage.outputs.tags }}
+            php-wasm-build-stage:ci
           labels: ${{ steps.metadata-build-stage.outputs.labels }}
           push: false
           load: true
+
+      # The bridge is the only part of this build that is hand-written C, and it
+      # is the part that gets published. Run its regression suite before the
+      # artifact is packaged.
+      #
+      # test-bridge.sh recompiles just the bridge against the libphp.a already
+      # in the image, which takes seconds rather than the hours a full PHP build
+      # costs. It expects to run *inside* the build-stage image (it sources
+      # emsdk_env.sh and reads /local/src/php-src), so the workspace is
+      # bind-mounted: the Dockerfile only COPYs src/php-wasm-bridge.c, so the
+      # script and the test suite are not in the image.
+      #
+      # The suite needs the `node` target that the link line builds.
+      - name: 🧪 Run bridge tests
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --volume "$PWD:/repo" \
+            --workdir /repo \
+            php-wasm-build-stage:ci \
+            ./build-tools/scripts/test-bridge.sh
 
       - name: 🙏 Build Docker image (deploy-stage)
         uses: docker/build-push-action@v7 # https://github.com/docker/build-push-action
@@ -149,6 +188,7 @@ jobs:
           docker images --digests
 
       - name: 🐳 🚀 Push all images and all tags
+        if: github.event_name != 'pull_request'
         run: |
           docker push --all-tags ${{ env.GHCR_IMAGE }}
 
@@ -179,11 +219,13 @@ jobs:
 
       # This is a date-based version for repeatable releases.
       - name: 🏷️ Versioning of Release Tag
+        if: github.event_name != 'pull_request'
         run: |
           BUILD_DATE=$(date +'%Y%m%d')
           echo "RELEASE_TAG=${{ env.PHP_WASM_ARTIFACT_NAME }}-${BUILD_DATE}" >> "$GITHUB_ENV"
 
       - name: 📦 🚀 Create Release
+        if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -195,6 +237,7 @@ jobs:
             --latest
 
       - name: 📦 🔼 Upload Release Artifact
+        if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
