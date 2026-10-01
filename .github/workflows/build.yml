@@ -50,10 +50,12 @@ jobs:
 
     steps:
       - name: ✂️ Free Disk Space
-        uses: jlumbroso/free-disk-space@v2.0.0 # https://github.com/jlumbroso/free-disk-space
+        uses: jlumbroso/free-disk-space@v2 # https://github.com/jlumbroso/free-disk-space
         with:
-          preinstalled-runtimes:: true
+          preinstalled-runtimes: true
           docker-images: false
+          # v2 no longer removes swap by default: doing so can OOM-kill the job.
+          swap-storage: false
 
       - name: 🤘 Checkout Code
         uses: actions/checkout@v7 # https://github.com/actions/checkout
@@ -62,7 +64,7 @@ jobs:
         run: echo "TERM=xterm-256color" >> "$GITHUB_ENV"
 
       - name: 🔍 Run hadolint
-        uses: hadolint/hadolint-action@v3.5.0 # https://github.com/hadolint/hadolint-action
+        uses: hadolint/hadolint-action@v3 # https://github.com/hadolint/hadolint-action
         with:
           dockerfile: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
           no-fail: true
