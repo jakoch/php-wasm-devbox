@@ -237,14 +237,9 @@ static size_t phpw_read_post(char *buffer, size_t count_bytes)
 	}
 
 	/*
-	 * SG(read_post_bytes) is maintained by sapi_read_post_block(), which adds
-	 * exactly what this hook returns, and sapi_activate() resets it to 0 for
-	 * every request. It therefore cannot exceed the body length, because we
-	 * never return more than is left.
-	 *
-	 * The comparison below is unsigned, so clamp rather than rely on that
-	 * staying true: an over-large SG(read_post_bytes) would wrap to a huge
-	 * size_t and turn the memcpy into a heap overread of host-supplied data.
+	 * SG(read_post_bytes) is maintained by sapi_read_post_block() and reset per
+	 * request, so it cannot exceed the body length. Clamp anyway: the
+	 * subtraction is unsigned, so an over-large value would overread the memcpy.
 	 */
 	consumed = (size_t) SG(read_post_bytes);
 
@@ -508,21 +503,12 @@ static char *phpw_dup_result(zval *result)
 /**
  * Coerce an evaluated result to a string in place.
  *
- * zend_eval_string() returns whatever type the expression produced, so an int,
- * float, bool, null or array has to be converted before it can be handed to
- * JavaScript.
+ * convert_to_string() throws for an object with no __toString, and that throw
+ * is a bailout inside phpw_exec()'s zend_first_try, so the caller would only
+ * see "execution aborted". Cast here instead, as zend_operators.c does, where a
+ * failure can be reported as itself.
  *
- * convert_to_string() cannot be used as-is. For an object it routes through the
- * class cast handler, which throws when the class has no __toString -- and that
- * throw is a bailout inside phpw_exec()'s own zend_first_try, so the caller
- * would only ever see the generic "execution aborted" instead of the real
- * reason. Do the cast here, where a failure can be reported as itself.
- *
- * Mirrors what the engine does for the same case (Zend/zend_operators.c): call
- * the handler, and only raise afterwards if it failed silently.
- *
- * On failure the zval is left untouched and therefore not IS_STRING, which is
- * how phpw_exec() ends up returning NULL. The reason is in phpw_last_error().
+ * On failure the zval stays unconverted, so phpw_exec() returns NULL.
  */
 static void phpw_cast_result_to_string(zval *zv)
 {
@@ -555,19 +541,10 @@ static void phpw_cast_result_to_string(zval *zv)
 /**
  * Evaluate a PHP expression and return its value as a string.
  *
- * This evaluates a single *expression*, which is the contract of
- * zend_eval_string(): the value of the first statement is the result, so
- * `$a = 1; $a + 1;` returns "1" rather than "2". Wrap several statements in an
- * immediately invoked function to return their last value:
- *
- *     (function () { $a = 1; return $a + 1; })()   -> "2"
- *
- * seanmorris/php-wasm documents the same constraint on its pib_exec(). For
- * whole scripts, including anything that echoes, use phpw_run() instead.
- *
- * An object without __toString cannot be returned as a string; that is
- * reported through phpw_last_error() rather than treated as an execution
- * failure.
+ * Evaluates a single expression, per zend_eval_string(): the first statement's
+ * value is the result, so `$a = 1; $a + 1;` gives "1". Wrap several statements
+ * in an IIFE, as seanmorris/php-wasm documents for pib_exec(). For whole
+ * scripts use phpw_run().
  *
  * Returns a buffer the caller must release with phpw_free(), or NULL when the
  * expression failed to compile or threw. Use phpw_last_error() for the reason.
@@ -624,14 +601,8 @@ char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
 			zend_clear_exception();
 		} else {
 			/*
-			 * Coerce the result to a string. zend_eval_string() sets a return
-			 * value of whatever type the expression produced, so without this
-			 * an int, float, bool or array would come back empty.
-			 *
 			 * Safe only on the success path: on a compile failure ret_zv was
 			 * never written and converting it would read an uninitialised zval.
-			 * A cast failure is recorded by phpw_cast_result_to_string() and
-			 * leaves ret_zv unconverted, so phpw_exec() returns NULL below.
 			 */
 			phpw_cast_result_to_string(&ret_zv);
 		}

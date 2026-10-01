@@ -177,25 +177,21 @@ check('an undefined method is reported', ccall('phpw_exec', 'number', ['string']
 check('it still works after failures', exec('2*21'), '42');
 
 console.log('\n# 4b. results that cannot be returned as a string');
-// convert_to_string() throws for an object with no __toString. That throw used
-// to become a bailout inside phpw_exec()'s own zend_first_try, so the caller
-// saw the generic "execution aborted" and lost the real reason.
+// A non-castable object used to surface as the generic "execution aborted".
 check('a bare object returns NULL', ccall('phpw_exec', 'number', ['string'], ['new stdClass();']), 0);
 check('the reason names the class', lastError(), 'Object of class stdClass could not be converted to string');
 check('an object without __toString, via a closure', ccall('phpw_exec', 'number', ['string'], ['(function () { return new ArrayObject([]); })();']), 0);
 check('the reason names that class too', lastError(), 'Object of class ArrayObject could not be converted to string');
 // An object that can be cast is still returned normally.
 check('an object with __toString converts', exec('(function () { $o = new class { public function __toString(): string { return "custom"; } }; return $o; })()'), 'custom');
-// Creating objects is fine; only *returning* one is not. phpw_run() has no
-// return value at all, so it was never affected.
+// Creating objects is fine; only returning one is not. phpw_run() was never affected.
 check('an object created but not returned is fine', exec('(function () { $o = new stdClass(); return 42; })()'), '42');
 check('the module still works', exec('2*21'), '42');
 check('phpw_run() with an object returns 0', run('$o = new stdClass();'), 0);
 check('and reports no error', lastError(), null);
 
 console.log('\n# 4c. phpw_exec() evaluates a single expression');
-// zend_eval_string() returns the value of the *first* statement, so this is 1
-// and not 2. seanmorris/php-wasm documents the same constraint on pib_exec().
+// zend_eval_string() yields the first statement's value: 1, not 2.
 check('only the first statement is the result', exec('$a = 1; $a + 1;'), '1');
 check('an IIFE returns its last value', exec('(function () { $a = 1; return $a + 1; })()'), '2');
 check('a trailing semicolon is fine on a single statement', exec('1 + 1;'), '2');
@@ -257,11 +253,8 @@ request('POST', '', 'application/x-www-form-urlencoded', largeBody);
 check('large body length', exec('strlen($_POST["k"] ?? "")'), '100000');
 check('large body content', exec('($_POST["k"] ?? "") === str_repeat("v", 100000) ? "same" : "differs"'), 'same');
 
-// SAPI_POST_BLOCK_SIZE (main/SAPI.h) is the buffer the read_post hook is called
-// with. The read loop in sapi_read_post_block() only stops once the hook
-// returns *less* than that, so a body of exactly one block is the case where
-// an off-by-one in the offset arithmetic truncates the body instead of ending
-// the loop. Cover one byte under, exactly, and one byte over.
+// A body of exactly one SAPI_POST_BLOCK_SIZE is where an off-by-one in the
+// offset arithmetic truncates it instead of ending the read loop.
 console.log('\n# 11b. POST bodies around the read_post block size');
 for (const total of [SAPI_POST_BLOCK_SIZE - 1, SAPI_POST_BLOCK_SIZE, SAPI_POST_BLOCK_SIZE + 1]) {
   const expected = 'v'.repeat(total - 2);
@@ -293,17 +286,13 @@ check('dom', exec('class_exists("DOMDocument") ? "yes" : "no"'), 'yes');
 check('pdo', exec('class_exists("PDO") ? "yes" : "no"'), 'yes');
 check('simplexml', exec('function_exists("simplexml_load_string") ? "yes" : "no"'), 'yes');
 
-// The checks above only prove an extension was compiled in. These call into
-// sqlite3, which is what catches a libsqlite3.a missing from the link line:
-// --with-sqlite3 compiles the extension regardless, so the module still links
-// and this suite still passes, and the first code path that actually reaches a
-// sqlite3_* symbol aborts the whole instance. class_exists('PDO') is not such a
-// path, which is why that check above passes either way.
+// The checks above only prove an extension compiled in. These call into sqlite3,
+// which is what catches a libsqlite3.a missing from the link line: the module
+// still links, and class_exists('PDO') still passes.
 check('sqlite3 is linked', /^\d+\.\d+/.test(exec('(new SQLite3(":memory:"))->version()["versionString"];')), true);
 check('pdo_sqlite driver', exec('in_array("sqlite", PDO::getAvailableDrivers()) ? "yes" : "no"'), 'yes');
 
-// Wrapped in a closure because phpw_exec() evaluates one expression: with the
-// statements inline only the first, the assignment, would produce the result.
+// Wrapped in a closure: phpw_exec() evaluates one expression.
 check('a query runs', exec(
   '(function() {'
   + '  $p = new PDO("sqlite::memory:");'
@@ -314,9 +303,7 @@ check('a query runs', exec(
 ), '42');
 
 // phpinfo() reports the sqlite version, so it aborts the module when the link
-// is incomplete. It is the first example in the playground. Run it through
-// phpw_run(), as the playground does, and capture the 50KB of output instead of
-// letting it land in the test output.
+// is incomplete. Run via phpw_run() and captured, to keep 50KB out of the output.
 run('ob_start(); phpinfo(); file_put_contents("/tmp/phpw-phpinfo.html", ob_get_clean());');
 {
   const info = Buffer.from(FS.readFile('/tmp/phpw-phpinfo.html')).toString();
