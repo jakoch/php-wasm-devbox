@@ -58,7 +58,7 @@ jobs:
       - name: 🔽 Setup Node.js
         uses: actions/setup-node@v7 # https://github.com/actions/setup-node
         with:
-          node-version: '20'
+          node-version: '24'
           cache: false
 
       - name: 📋 Generate version list for PHP-WASM modules (php-versions.json)

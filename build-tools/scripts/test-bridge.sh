@@ -81,5 +81,12 @@ emcc -o "${OUT_DIR}/php-wasm-bridge.mjs" \
     "${PREFIX}/lib/libonig.a" \
     "${PREFIX}/lib/libsqlite3.a"
 
-echo "==> Running the test suite"
+# Prefer the image's Node 24 over the one emsdk ships, for the test run only.
+# emcc and `make` keep using emsdk's node, which is the version it is pinned to.
+if [ -x /usr/local/node24/bin/node ]; then
+    PATH="/usr/local/node24/bin:$PATH"
+    export PATH
+fi
+
+echo "==> Running the test suite with $(node --version)"
 node "${REPO_ROOT}/test/php-wasm-bridge.test.mjs" "${OUT_DIR}/php-wasm-bridge.mjs"

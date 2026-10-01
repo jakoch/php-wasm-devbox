@@ -14,11 +14,9 @@ image and leaves the module in `/tmp/php-wasm-bridge-test`:
 ```
 
 The module is built for `ENVIRONMENT=web,worker,node`, so any `node` loads it.
-Inside the devcontainer, use the one emsdk installed:
-
-```bash
-source /local/src/emsdk/emsdk_env.sh
-```
+Node 24 is what the image installs for this; the bridge suite is run against it
+by `build-tools/scripts/test-bridge.sh`. Outside the devcontainer, any recent
+`node` works — verified on v20.18.0 and v24.21.0.
 
 ## Usage
 
