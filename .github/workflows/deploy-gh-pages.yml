@@ -1,3 +1,13 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# .github/workflows/deploy-gh-pages.yml
+#
+# SPDX-FileCopyrightText: 2025 Jens A. Koch.
+# SPDX-License-Identifier: MIT
+#
+# This file is part of https://github.com/jakoch/php-wasm-devbox
+#
+
 name: "Deploy to GitHub Pages"
 
 on:
@@ -12,63 +22,167 @@ on:
       - 'playground/**'
       - '.github/workflows/deploy-gh-pages.yml'
 
+# Only one deployment may run at a time. The deploy step pushes with --force,
+# so a manual dispatch racing a push would otherwise leave gh-pages as a
+# mixture of the two runs. Queued runs are not cancelled, so a deploy always
+# finishes and the branch is never left half-written.
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: write # permit to push the built site to the gh-pages branch
+
 jobs:
+
+# ---------------------------------------------------------------------------------------
+
   deploy:
-    runs-on: ubuntu-latest
+
+# ---------------------------------------------------------------------------------------
+
+    name: "Deploy Playground"
+    # https://github.com/actions/runner-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v7 # https://github.com/actions/checkout
         with:
           fetch-depth: 1
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      # generate-app-version-json.sh reads the version from package.json via `node -p`.
+      # v5+ detects the package manager and enables caching by default; this job
+      # only needs a node binary, so caching stays off.
+      - name: 🔽 Setup Node.js
+        uses: actions/setup-node@v7 # https://github.com/actions/setup-node
         with:
           node-version: '20'
+          cache: false
 
-      - name: Generate version list for PHP-WASM modules (php-versions.json)
+      - name: 📋 Generate version list for PHP-WASM modules (php-versions.json)
         run: |
           ./playground/build-tools/scripts/generate-php-versions-json.sh
 
-      - name: Set Application Version (version.json)
+      - name: 🏷️ Set Application Version (version.json)
         run: |
           ./playground/build-tools/scripts/generate-app-version-json.sh
 
-      - name: Test JSON files for validity
+      # A missing file must fail the run. Guarding every check with
+      # "if [ -f ... ]" made this step pass silently whenever a generator script
+      # produced nothing, which is how an invalid php-versions.json shipped.
+      - name: 🧪 Test JSON files for validity
         run: |
-          cd playground
-          for file in version.json php-versions.json examples/examples.json; do
-            if [ -f "$file" ]; then
-              if ! jq empty "$file"; then
-                echo "Invalid JSON in $file"
-                exit 1
-              fi
+          set -euo pipefail
+          for file in \
+            playground/version.json \
+            playground/assets/wasm/php-versions.json \
+            playground/examples/examples.json
+          do
+            if [ ! -f "$file" ]; then
+              echo "::error::Expected file is missing: $file"
+              exit 1
+            fi
+            if ! jq empty "$file"; then
+              echo "::error::Invalid JSON in $file"
+              exit 1
+            fi
+            echo "✔ $file"
+          done
+
+      # Explicit allowlist instead of "copy everything, then delete the dev files".
+      # The old `cp -r playground/*` glob silently skipped every dotfile, which is
+      # how .nojekyll went missing from the published site, and it published
+      # whatever new dev file happened to appear in /playground.
+      - name: 📦 Prepare deploy folder
+        run: |
+          set -euo pipefail
+          mkdir -p deploy
+
+          # Everything the browser requests: the two pages, the Pages marker,
+          # the generated version.json, the static assets (incl. all
+          # php-*-web.{mjs,wasm}) and the examples.
+          # version.json is generated into playground/, NOT playground/assets/,
+          # so it has to be listed explicitly here.
+          cp playground/index.html playground/multi.html playground/.nojekyll \
+             playground/version.json deploy/
+          cp -r playground/assets playground/examples deploy/
+
+          # _get_file.php is a helper for the local PHP backend
+          # (playground/assets/js/playground.js only calls it off github.io).
+          rm -f deploy/examples/_get_file.php
+
+          # Fail loudly if anything the site depends on did not make it in.
+          for file in \
+            deploy/.nojekyll \
+            deploy/index.html \
+            deploy/multi.html \
+            deploy/assets/css/style.css \
+            deploy/assets/favicon.ico \
+            deploy/assets/js/playground.js \
+            deploy/assets/js/multi-run.js \
+            deploy/assets/js/timer.js \
+            deploy/assets/wasm/php-versions.json \
+            deploy/examples/examples.json \
+            deploy/version.json
+          do
+            if [ ! -f "$file" ]; then
+              echo "::error::Missing from the deploy folder: $file"
+              exit 1
             fi
           done
 
-      - name: Prepare deploy folder
+      # The page builds its module URL from the version list, so a version that
+      # lacks its .wasm or .mjs counterpart is a 404 in the browser rather than
+      # a build failure. Cross-check the list against the files that shipped.
+      - name: 🔗 Verify PHP-WASM modules match php-versions.json
         run: |
-          mkdir deploy
-          cp -r playground/* deploy/
-          cd deploy
-          rm -rf .devcontainer node_modules test-results
-          rm -f .editorconfig .gitignore package.json biome.json readme.md serve.sh setup.sh
-          rm -rf build-tools
-          rm -f examples/_get_file.php
+          set -euo pipefail
+          cd deploy/assets/wasm
+          status=0
+
+          for version in $(jq -r '.[]' php-versions.json); do
+            for ext in wasm mjs; do
+              file="php-${version}-web.${ext}"
+              if [ ! -f "$file" ]; then
+                echo "::error::php-versions.json lists ${version}, but ${file} is missing"
+                status=1
+              fi
+            done
+          done
+
+          shopt -s nullglob
+          for wasm in php-*-web.wasm; do
+            version="${wasm#php-}"
+            version="${version%-web.wasm}"
+            if ! jq -e --arg v "$version" 'index($v) != null' php-versions.json > /dev/null; then
+              echo "::error::${wasm} is not listed in php-versions.json"
+              status=1
+            fi
+          done
+
+          exit "$status"
 
       - name: ✔ Initialize Git and commit
         run: |
+          set -euo pipefail
           cd deploy
-          git init
+          git init -b gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git checkout -b gh-pages
-          git add .
+          git remote add origin "https://github.com/${{ github.repository }}.git"
+          git add --all
           git commit -m "Deploy to GitHub Pages from ${GITHUB_REPOSITORY}@${GITHUB_SHA::9}"
 
+      # The token is passed as an ephemeral Authorization header instead of being
+      # embedded in the remote URL, so it is never written into .git/config.
       - name: 🚀 Push to gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           cd deploy
-          git push --force origin gh-pages
+          auth="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" \
+            push --force origin gh-pages
