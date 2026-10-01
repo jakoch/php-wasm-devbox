@@ -6,7 +6,7 @@
 # This file is part of https://github.com/jakoch/php-wasm-devbox
 #
 
-FROM debian:bookworm-slim AS build-stage
+FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS build-stage
 
 # +-----------------------------+
 # | ARGS                        |
@@ -21,6 +21,8 @@ ARG SQLITE_VERSION=3500300
 ARG SQLITE_SHA256=ec5496cdffbc2a4adb59317fd2bf0e582bf0e6acd8f4aae7e97bc723ddba7233
 ARG NODE_VERSION=24.21.0
 ARG NODE_SHA256=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
+# VLD is a debug-only extension; it must not end up in the shipped artifact.
+ARG ENABLE_VLD=0
 
 # Node for running the module, its tests and the CLI demo. Deliberately NOT on
 # PATH ahead of emsdk: emscripten pins the node it ships with, and shadowing it
@@ -86,8 +88,8 @@ RUN set -e; \
     echo "Install Emscripten SDK" && \
 	git clone  https://github.com/emscripten-core/emsdk.git --branch "${EMSCRIPTEN_VERSION}" --single-branch --depth 1 && \
 	cd emsdk && \
-	./emsdk install latest && \
-	./emsdk activate latest && \
+	./emsdk install "${EMSCRIPTEN_VERSION}" && \
+	./emsdk activate "${EMSCRIPTEN_VERSION}" && \
     echo "Download PHP and prepare build system" && \
 	git clone https://github.com/php/php-src.git /local/src/php-src/ --branch "PHP-${PHP_VERSION}" --single-branch --depth 1 && \
 	cd /local/src/php-src/ && \
@@ -100,7 +102,6 @@ RUN set -e; \
 # Set ENV vars for Emscripten SDK and set global compiler flags
 ENV PATH=/local/src/emsdk:/local/src/emsdk/upstream/emscripten:/usr/local/bin:/usr/bin \
 	EMSDK=/local/src/emsdk \
-	EMSDK_NODE=/local/src/emsdk/node/20.18.0_64bit/bin/node \
 	EM_CONFIG=/local/src/emsdk/.emscripten \
     CFLAGS="-O3 -g0" CXXFLAGS="-O3 -g0" LDFLAGS="-O3 -g0"
 
@@ -120,9 +121,12 @@ RUN set -e; \
     emmake make install && \
     echo "Compile sqlite3" && \
     mkdir -p /local/src/sqlite && \
-    curl -o /tmp/sqlite-autoconf-3500300.tar.gz https://www.sqlite.org/2025/sqlite-autoconf-3500300.tar.gz && \
-    tar -xzf /tmp/sqlite-autoconf-3500300.tar.gz -C /local/src/sqlite --strip-components=1 && \
-    rm -f /tmp/sqlite-autoconf-3500300.tar.gz && \
+    curl -fsSL -o "/tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" \
+      "https://www.sqlite.org/2025/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" && \
+    echo "${SQLITE_SHA256}  /tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" > /tmp/sqlite.sha256 && \
+    sha256sum -c /tmp/sqlite.sha256 && \
+    tar -xzf "/tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" -C /local/src/sqlite --strip-components=1 && \
+    rm -f "/tmp/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" /tmp/sqlite.sha256 && \
     cd /local/src/sqlite && \
     emconfigure ./configure --host="$(emcc -dumpmachine)" --prefix=/local/install --enable-static --disable-shared && \
     emmake make -j"$(nproc)" && \
@@ -146,6 +150,8 @@ RUN echo "Clone VLD extension" && \
 RUN set -e; \
     echo "Configure PHP" && \
     cd /local/src/php-src/ && \
+    VLD_FLAG=""; \
+    if [ "${ENABLE_VLD}" = "1" ]; then VLD_FLAG="--enable-vld"; fi && \
 	emconfigure ./configure \
     --host="$(emcc -dumpmachine)" \
     --enable-embed=static \
@@ -161,7 +167,7 @@ RUN set -e; \
 	--enable-simplexml \
 	--enable-xmlreader \
     --enable-pdo \
-    --enable-vld \
+    ${VLD_FLAG} \
     --enable-xml \
     --with-libxml \
     --with-pdo-sqlite \
@@ -269,6 +275,6 @@ RUN set -e; \
 # The folder /php-wasm contains the compiled PHP-WASM module.
 #
 
-FROM debian:bookworm-slim AS deploy-stage
+FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS deploy-stage
 
 COPY --from=build-stage /php-wasm /php-wasm
