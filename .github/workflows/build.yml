@@ -22,10 +22,7 @@ on:
       - '.devcontainer/**'
       - '.github/workflows/build.yml'
       - 'src/**'
-  # Validate pull requests, including Dependabot's, before they reach main.
-  # Without this the only trigger was a push to main, so a change to the bridge
-  # or the Dockerfile shipped unvalidated. Every publish step below is skipped
-  # for pull_request events.
+  # Validates PRs, including Dependabot's. Publish steps skip pull_request.
   pull_request:
     paths:
       - '.devcontainer/**'
@@ -34,12 +31,8 @@ on:
       - 'test/**'
       - 'build-tools/scripts/**'
 
-# Only one build may publish at a time. A run can be part way through pushing
-# images and creating a release when a second push arrives, and cancelling it
-# would leave the tags and the release out of sync. Queued runs are not
-# cancelled, so a build always finishes. Same reasoning as
-# deploy-gh-pages.yml. The group is per-ref so a pull request never blocks a
-# push to main.
+# Per-ref, and never cancelled: this workflow pushes tags and creates a release,
+# so cancelling a run mid-publish would leave the two out of sync.
 concurrency:
   group: build-docker-image-${{ github.ref }}
   cancel-in-progress: false
@@ -55,9 +48,7 @@ jobs:
     name: "Build Docker Image"
     # https://github.com/actions/runner-images
     runs-on: ubuntu-24.04
-    # Compiling PHP for wasm is most of this job, and it happens on every run
-    # that changes the Dockerfile, the bridge or a configure flag. The default
-    # of 360 minutes would let a genuinely stuck build hold a runner for hours.
+    # The 360 minute default lets a stuck build hold a runner for hours.
     timeout-minutes: 180
 
     permissions:
@@ -88,10 +79,7 @@ jobs:
       - name: 🛠️ Set TERM for shtool
         run: echo "TERM=xterm-256color" >> "$GITHUB_ENV"
 
-      # Enforcing: this is the only static check in the build, and the Dockerfile
-      # it lints is the thing that produces the published artifact. It passes
-      # cleanly with the rules ignored in .hadolint.yml, verified with hadolint
-      # v2.12.0 (the version hadolint-action v3 ships).
+      # Enforcing; passes cleanly with the rules ignored in .hadolint.yml.
       - name: 🔍 Run hadolint
         uses: hadolint/hadolint-action@v3 # https://github.com/hadolint/hadolint-action
         with:
@@ -105,11 +93,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🔽 Setup QEMU
-        uses: docker/setup-qemu-action@v4 # https://github.com/docker/setup-qemu-action
-        with:
-          platforms: ${{ matrix.config.platform }}
-
+      # No QEMU step: both builds are linux/amd64, which the runner has natively.
       - name: 🔽 Setup Docker Buildx
         uses: docker/setup-buildx-action@v4 # https://github.com/docker/setup-buildx-action
 
@@ -154,39 +138,22 @@ jobs:
           file: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
           target: build-stage
           platforms: linux/amd64
-          # The trailing tag is a stable local name for the bridge test step
-          # below. The metadata tags cannot be used for that: `latest=auto`
-          # only emits the "latest" tag on a push to the default branch, so on a
-          # pull_request there is no predictable name to reference. This tag has
-          # no registry prefix, so the `--all-tags` push below ignores it.
+          # Stable local name for the test step below: on a pull_request
+          # `latest=auto` emits no tag, so there is nothing else to reference.
           tags: |
             ${{ steps.metadata-build-stage.outputs.tags }}
             php-wasm-build-stage:ci
           labels: ${{ steps.metadata-build-stage.outputs.labels }}
-          # BuildKit cache in the Actions cache service. Without this every run
-          # re-clones php-src and emsdk and recompiles oniguruma, libxml2,
-          # sqlite and PHP from scratch, which is most of the wall time.
-          #
-          # Scoped per stage so the two builds do not overwrite each other's
-          # cache, and scoped to the branch's ref so a pull request cannot
-          # poison main's cache.
+          # Scoped per stage and per ref, so the builds cannot overwrite each
+          # other and a pull request cannot poison main's cache.
           cache-from: type=gha,scope=build-stage-${{ github.ref }}
           cache-to: type=gha,mode=max,scope=build-stage-${{ github.ref }}
           push: false
           load: true
 
-      # The bridge is the only part of this build that is hand-written C, and it
-      # is the part that gets published. Run its regression suite before the
-      # artifact is packaged.
-      #
-      # test-bridge.sh recompiles just the bridge against the libphp.a already
-      # in the image, which takes seconds rather than the hours a full PHP build
-      # costs. It expects to run *inside* the build-stage image (it sources
-      # emsdk_env.sh and reads /local/src/php-src), so the workspace is
-      # bind-mounted: the Dockerfile only COPYs src/php-wasm-bridge.c, so the
-      # script and the test suite are not in the image.
-      #
-      # The suite needs the `node` target that the link line builds.
+      # The bridge is the only hand-written C here and it is what gets published,
+      # so gate the artifact on its suite. Bind-mounted because the Dockerfile
+      # only COPYs the bridge source, not the script or the tests.
       - name: 🧪 Run bridge tests
         run: |
           set -euo pipefail
@@ -203,7 +170,11 @@ jobs:
           file: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
           target: deploy-stage
           platforms: linux/amd64
-          tags: ${{ steps.metadata-deploy-stage.outputs.tags }}
+          # Stable local name for the artifact copy below, for the same reason as
+          # the build-stage tag: `latest=auto` emits nothing on a pull_request.
+          tags: |
+            ${{ steps.metadata-deploy-stage.outputs.tags }}
+            php-wasm-deploy-stage:ci
           labels: ${{ steps.metadata-deploy-stage.outputs.labels }}
           # Separate scope from the build stage, for the same reason.
           cache-from: type=gha,scope=deploy-stage-${{ github.ref }}
@@ -216,20 +187,47 @@ jobs:
           docker images --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}\t{{.Size}}"
           docker images --digests
 
-      - name: 🐳 🚀 Push all images and all tags
+      # Per stage: `--all-tags` cannot tell the two stages' tags apart, since they
+      # share a repository. Tags go via the environment, not interpolation.
+      - name: 🐳 🚀 Push build-stage image
         if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ steps.metadata-build-stage.outputs.tags }}
         run: |
-          docker push --all-tags ${{ env.GHCR_IMAGE }}
+          set -euo pipefail
+          printf '%s\n' "$TAGS" | grep -v '^[[:space:]]*$' | while read -r tag; do
+            docker push "$tag"
+          done
+
+      - name: 🐳 🚀 Push deploy-stage image
+        if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ steps.metadata-deploy-stage.outputs.tags }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$TAGS" | grep -v '^[[:space:]]*$' | while read -r tag; do
+            docker push "$tag"
+          done
 
       - name: 🔄 Copy build artifacts from the "deploy-stage" Docker image
         run: |
-          container_id=$(docker create ${{ env.GHCR_IMAGE }}:${{ matrix.config.debian_codename }}-deploy-latest)
-          docker cp $container_id:/php-wasm/ ./php-wasm
-          docker rm $container_id
+          set -euo pipefail
+          container_id=$(docker create php-wasm-deploy-stage:ci)
+          docker cp "$container_id:/php-wasm/" ./php-wasm
+          docker rm "$container_id"
 
-      - name: 🏷️ Get PHP Version from Artifact
+      # Read from the Dockerfile, not from the artifact: `find | head -n1` picks
+      # an arbitrary file once the image holds more than one version.
+      - name: 🏷️ Get PHP Version from Dockerfile
         run: |
-          echo "PHP_WASM_VERSION=$(find ./php-wasm -name 'php-*-web.mjs' | head -n1 | grep -oP '(?<=php-)\d+\.\d+\.\d+')" >> "$GITHUB_ENV"
+          set -euo pipefail
+          DOCKERFILE=".devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile"
+          PHP_VERSION=$(sed -n 's/^ARG PHP_VERSION=//p' "$DOCKERFILE" | head -n1)
+          if [ -z "$PHP_VERSION" ]; then
+            echo "::error::Could not read ARG PHP_VERSION from $DOCKERFILE"
+            exit 1
+          fi
+          echo "PHP_WASM_VERSION=$PHP_VERSION" >> "$GITHUB_ENV"
 
       - name: 🏷️ Versioning of Artifact
         run: |
@@ -246,12 +244,14 @@ jobs:
           name: ${{ env.PHP_WASM_ARTIFACT_NAME }}
           path: ${{ env.PHP_WASM_ARTIFACT_ZIPFILE}}
 
-      # This is a date-based version for repeatable releases.
+      # Date plus short SHA: a date-only tag collides when two pushes land on
+      # the same day, and the second `gh release create` fails the whole job.
       - name: 🏷️ Versioning of Release Tag
         if: github.event_name != 'pull_request'
         run: |
           BUILD_DATE=$(date +'%Y%m%d')
-          echo "RELEASE_TAG=${{ env.PHP_WASM_ARTIFACT_NAME }}-${BUILD_DATE}" >> "$GITHUB_ENV"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "RELEASE_TAG=${{ env.PHP_WASM_ARTIFACT_NAME }}-${BUILD_DATE}-${SHORT_SHA}" >> "$GITHUB_ENV"
 
       - name: 📦 🚀 Create Release
         if: github.event_name != 'pull_request'
