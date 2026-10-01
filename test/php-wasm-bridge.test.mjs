@@ -267,6 +267,37 @@ check('dom', exec('class_exists("DOMDocument") ? "yes" : "no"'), 'yes');
 check('pdo', exec('class_exists("PDO") ? "yes" : "no"'), 'yes');
 check('simplexml', exec('function_exists("simplexml_load_string") ? "yes" : "no"'), 'yes');
 
+// The checks above only prove an extension was compiled in. These call into
+// sqlite3, which is what catches a libsqlite3.a missing from the link line:
+// --with-sqlite3 compiles the extension regardless, so the module still links
+// and this suite still passes, and the first code path that actually reaches a
+// sqlite3_* symbol aborts the whole instance. class_exists('PDO') is not such a
+// path, which is why that check above passes either way.
+check('sqlite3 is linked', /^\d+\.\d+/.test(exec('(new SQLite3(":memory:"))->version()["versionString"];')), true);
+check('pdo_sqlite driver', exec('in_array("sqlite", PDO::getAvailableDrivers()) ? "yes" : "no"'), 'yes');
+
+// Wrapped in a closure because phpw_exec() evaluates one expression: with the
+// statements inline only the first, the assignment, would produce the result.
+check('a query runs', exec(
+  '(function() {'
+  + '  $p = new PDO("sqlite::memory:");'
+  + '  $p->exec("CREATE TABLE t (a)");'
+  + '  $p->exec("INSERT INTO t VALUES (42)");'
+  + '  return (string) $p->query("SELECT a FROM t")->fetchColumn();'
+  + '})()'
+), '42');
+
+// phpinfo() reports the sqlite version, so it aborts the module when the link
+// is incomplete. It is the first example in the playground. Run it through
+// phpw_run(), as the playground does, and capture the 50KB of output instead of
+// letting it land in the test output.
+run('ob_start(); phpinfo(); file_put_contents("/tmp/phpw-phpinfo.html", ob_get_clean());');
+{
+  const info = Buffer.from(FS.readFile('/tmp/phpw-phpinfo.html')).toString();
+  check('phpinfo() reports sqlite3', info.includes('sqlite3'), true);
+  check('phpinfo() reports PDO', info.includes('PDO'), true);
+}
+
 console.log('\n# 15. returned memory is owned by the caller');
 // phpw_exec() hands back malloc'd memory; phpw_free() must release it without
 // disturbing the module.

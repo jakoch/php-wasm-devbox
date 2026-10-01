@@ -78,7 +78,8 @@ emcc -o "${OUT_DIR}/php-wasm-bridge.mjs" \
     "${OUT_DIR}/php-wasm-bridge.o" \
     "${PHP_SRC}/.libs/libphp.a" \
     "${PREFIX}/lib/libxml2.a" \
-    "${PREFIX}/lib/libonig.a"
+    "${PREFIX}/lib/libonig.a" \
+    "${PREFIX}/lib/libsqlite3.a"
 
 echo "==> Running the test suite"
 node "${REPO_ROOT}/test/php-wasm-bridge.test.mjs" "${OUT_DIR}/php-wasm-bridge.mjs"

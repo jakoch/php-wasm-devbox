@@ -240,7 +240,8 @@ RUN set -e; \
     /local/build/php-wasm-bridge/php-wasm-bridge.o \
     /local/src/php-src/.libs/libphp.a \
   	/local/install/lib/libxml2.a \
-  	/local/install/lib/libonig.a
+  	/local/install/lib/libonig.a \
+  	/local/install/lib/libsqlite3.a
 
 #
 # Deploy Stage
