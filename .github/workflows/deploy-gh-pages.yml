@@ -53,13 +53,14 @@ jobs:
           fetch-depth: 1
 
       # generate-app-version-json.sh reads the version from package.json via `node -p`.
-      # v5+ detects the package manager and enables caching by default; this job
-      # only needs a node binary, so caching stays off.
+      # This job only needs a node binary, so caching stays off by leaving the
+      # `cache` input out. Passing `cache: false` does not work: the input
+      # arrives as the string "false", which setup-node tries to resolve as a
+      # cache dependency and fails with "Caching for 'false' is not supported".
       - name: 🔽 Setup Node.js
         uses: actions/setup-node@v7 # https://github.com/actions/setup-node
         with:
           node-version: '24'
-          cache: false
 
       - name: 📋 Generate version list for PHP-WASM modules (php-versions.json)
         run: |
