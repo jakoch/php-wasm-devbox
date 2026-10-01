@@ -136,6 +136,8 @@ static char *phpw_error_buf = NULL;
 static char *phpw_request_method = NULL;
 static char *phpw_query_string = NULL;
 static char *phpw_request_body = NULL;
+/* strlen(phpw_request_body), kept so the read_post hook is O(1) per chunk. */
+static size_t phpw_request_body_length = 0;
 static char *phpw_content_type = NULL;
 static char *phpw_script_name = NULL;
 static char *phpw_request_uri = NULL;
@@ -228,24 +230,33 @@ static void phpw_set_error(const char *message)
  */
 static size_t phpw_read_post(char *buffer, size_t count_bytes)
 {
-	size_t remaining;
+	size_t consumed;
 
 	if (phpw_request_body == NULL) {
 		return 0;
 	}
 
-	/* SG(read_post_bytes) is maintained by sapi_read_post_block(). */
-	remaining = (size_t) strlen(phpw_request_body) - (size_t) SG(read_post_bytes);
+	/*
+	 * SG(read_post_bytes) is maintained by sapi_read_post_block(), which adds
+	 * exactly what this hook returns, and sapi_activate() resets it to 0 for
+	 * every request. It therefore cannot exceed the body length, because we
+	 * never return more than is left.
+	 *
+	 * The comparison below is unsigned, so clamp rather than rely on that
+	 * staying true: an over-large SG(read_post_bytes) would wrap to a huge
+	 * size_t and turn the memcpy into a heap overread of host-supplied data.
+	 */
+	consumed = (size_t) SG(read_post_bytes);
 
-	if (remaining == 0) {
+	if (consumed >= phpw_request_body_length) {
 		return 0;
 	}
 
-	if (count_bytes > remaining) {
-		count_bytes = remaining;
+	if (count_bytes > phpw_request_body_length - consumed) {
+		count_bytes = phpw_request_body_length - consumed;
 	}
 
-	memcpy(buffer, phpw_request_body + SG(read_post_bytes), count_bytes);
+	memcpy(buffer, phpw_request_body + consumed, count_bytes);
 
 	return count_bytes;
 }
@@ -462,6 +473,9 @@ int EMSCRIPTEN_KEEPALIVE phpw_request_init(
 	phpw_set(&phpw_request_body, body);
 	phpw_set(&phpw_script_name, script_name);
 	phpw_set(&phpw_request_uri, request_uri);
+
+	/* Must stay in step with phpw_request_body; see phpw_read_post(). */
+	phpw_request_body_length = body ? strlen(body) : 0;
 
 	return PHPW_OK;
 }

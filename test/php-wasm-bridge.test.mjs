@@ -64,6 +64,9 @@ function trimmed(value) {
 
 const { ccall, FS } = mod;
 
+/** Buffer size sapi_read_post_block() passes to the read_post hook (main/SAPI.h). */
+const SAPI_POST_BLOCK_SIZE = 0x4000;
+
 let checks = 0;
 let failures = 0;
 const failed = [];
@@ -227,6 +230,24 @@ const largeBody = 'k=' + 'v'.repeat(100000);
 request('POST', '', 'application/x-www-form-urlencoded', largeBody);
 check('large body length', exec('strlen($_POST["k"] ?? "")'), '100000');
 check('large body content', exec('($_POST["k"] ?? "") === str_repeat("v", 100000) ? "same" : "differs"'), 'same');
+
+// SAPI_POST_BLOCK_SIZE (main/SAPI.h) is the buffer the read_post hook is called
+// with. The read loop in sapi_read_post_block() only stops once the hook
+// returns *less* than that, so a body of exactly one block is the case where
+// an off-by-one in the offset arithmetic truncates the body instead of ending
+// the loop. Cover one byte under, exactly, and one byte over.
+console.log('\n# 11b. POST bodies around the read_post block size');
+for (const total of [SAPI_POST_BLOCK_SIZE - 1, SAPI_POST_BLOCK_SIZE, SAPI_POST_BLOCK_SIZE + 1]) {
+  const expected = 'v'.repeat(total - 2);
+  request('POST', '', 'application/x-www-form-urlencoded', `k=${expected}`);
+  check(`body of ${total} bytes: entry count`, exec('count($_POST)'), '1');
+  check(`body of ${total} bytes: length`, exec('strlen($_POST["k"] ?? "MISSING")'), String(expected.length));
+  check(
+    `body of ${total} bytes: content`,
+    exec(`($_POST["k"] ?? "") === str_repeat("v", ${expected.length}) ? "same" : "differs"`),
+    'same'
+  );
+}
 
 console.log('\n# 12. file execution');
 FS.writeFile('/tmp/phpw-test-ok.php', '<?php echo "from file\\n";');
