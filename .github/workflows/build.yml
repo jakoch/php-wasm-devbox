@@ -74,11 +74,14 @@ jobs:
       - name: 🛠️ Set TERM for shtool
         run: echo "TERM=xterm-256color" >> "$GITHUB_ENV"
 
+      # Enforcing: this is the only static check in the build, and the Dockerfile
+      # it lints is the thing that produces the published artifact. It passes
+      # cleanly with the rules ignored in .hadolint.yml, verified with hadolint
+      # v2.12.0 (the version hadolint-action v3 ships).
       - name: 🔍 Run hadolint
         uses: hadolint/hadolint-action@v3 # https://github.com/hadolint/hadolint-action
         with:
           dockerfile: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
-          no-fail: true
 
       - name: 🔒 Login to Github Container Registry (GHCR)
         if: github.event_name != 'pull_request'
