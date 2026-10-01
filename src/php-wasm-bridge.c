@@ -45,62 +45,18 @@
 #include <string.h>
 
 /**
- * @brief PHP-WASM Bridge
+ * @brief PHP-WASM Bridge: runs PHP inside an Emscripten module.
  *
- * The PHP-WASM Bridge runs PHP inside a WebAssembly module built with
- * Emscripten and exposes it to JavaScript.
+ * Lifecycle: bring the SAPI up once and run a request cycle per execution, as
+ * seanmorris/php-wasm does. Calling php_embed_init()/php_embed_shutdown() per
+ * call instead memsets the SAPI globals and frees request-scoped allocations,
+ * which wiped request state and dangled returned pointers.
  *
- * Lifecycle
- * ---------
- * PHP's embed SAPI is not designed to be initialised and torn down around
- * every execution. `php_embed_init()` calls `sapi_startup()` -- which copies
- * the SAPI module and memsets the SAPI globals -- then `php_module_startup()`
- * and finally `php_request_startup()`. `php_embed_shutdown()` unwinds all
- * three. Calling that pair per execution is what the previous revision of
- * this file did, and it has two consequences:
- *
- *   1. Any request state established by the caller is wiped on every call,
- *      because `sapi_globals_ctor()` memsets `SG()`.
- *   2. `zval` and `zend_string` allocations made during the request are
- *      released by `php_request_shutdown()`, so a pointer into that memory
- *      must not outlive the call.
- *
- * The correct shape -- and the one used by seanmorris/php-wasm -- is to bring
- * the SAPI and module up exactly once, then run a normal
- * startup/execute/shutdown request cycle per execution:
- *
- *     phpw_init()            -> sapi_startup + module_startup  (once)
- *     phpw_request_begin()   -> php_request_startup()           (per execution)
- *     ... execute ...
- *     (internal)            -> php_request_shutdown()         (per execution)
- *
- * `phpw_exec()`, `phpw_run()` and `phpw()` drive that cycle themselves, so the
- * JavaScript-facing contract is unchanged.
- *
- * Returned strings
- * ----------------
- * `phpw_exec()` returns memory obtained from `malloc()`, not from PHP's
- * allocator, and the caller owns it. The string returned by
- * `zend_eval_string()` lives in the request and is destroyed by
- * `php_request_shutdown()`; returning that pointer directly was a
- * use-after-free. Use `phpw_free()` to release the result.
- *
- * Output
- * ------
- * Nothing is buffered. The embed SAPI writes straight to stdout, which reaches
- * JavaScript through the Emscripten `print:` module callback -- the mechanism
- * the playground relies on. Buffering here would swallow that output, so it is
- * deliberately absent.
- *
- * Errors
- * ------
- * Previously a parse error or an uncaught exception left `ret_zv`
- * uninitialised and the caller received whatever happened to be on the stack.
- * Failures are now reported through `phpw_last_error()` and, for
- * `phpw_exec()`, as a NULL return.
+ * Returned strings are malloc'd rather than request-scoped; release them with
+ * phpw_free(). Output is unbuffered: stdout reaches JS via Emscripten's `print:`.
+ * Failures surface through phpw_last_error(), never as an uninitialised zval.
  *
  * Exported API
- * ------------
  *   phpw_init()                  - initialise PHP once
  *   phpw_destroy()               - release PHP entirely
  *   phpw_request_init(method, query_string, body) - set $_SERVER/$_GET/$_POST
@@ -182,22 +138,15 @@ static void phpw_set(char **slot, const char *value)
 /**
  * Push buffered stdout/stderr out to the JavaScript callbacks.
  *
- * The embed SAPI writes through stdio, which is line buffered, and the flush
- * that php_embed_shutdown() used to perform no longer happens because the
- * module stays initialised between executions. Without this, output surfaces
- * one execution late. The previous revision instead wrote a bare newline to
- * both streams to force a flush, which is why callers saw stray blank lines
- * between chunks; flushing directly avoids that.
+ * php_embed_shutdown() used to flush on its way out; since the module now stays
+ * initialised between executions, that no longer happens and output arrives an
+ * execution late. Flushing directly also avoids the bare newlines the previous
+ * revision wrote to both streams to force the issue.
  */
 static void phpw_flush(void)
 {
-	/*
-	 * PHP's output layer buffers independently of stdio and only flushes on a
-	 * newline, so a script that writes without one would never reach ub_write.
-	 * The previous revision relied on php_embed_shutdown() to force this out;
-	 * since the module now stays initialised between executions it has to be
-	 * explicit.
-	 */
+	/* PHP's output layer flushes only on a newline, so a script that writes
+	 * without one needs this to reach ub_write. */
 	php_output_flush_all();
 
 	fflush(stdout);
@@ -213,17 +162,9 @@ static void phpw_set_error(const char *message)
 /**
  * SAPI read_post hook: hand the caller's request body to PHP.
  *
- * This is the supported way to feed a request body to the embed SAPI, which
- * otherwise leaves read_post NULL and therefore always sees an empty body.
- *
- * It has to be a SAPI hook rather than a direct assignment to
- * SG(request_info).request_body because $_POST is built eagerly, not lazily:
- * php_request_startup() calls sapi_activate(), which runs
- * sapi_read_standard_form_data() to fill the body stream, and then
- * php_hash_environment() -> zend_activate_auto_globals(), which invokes the
- * non-JIT $_POST auto-global handler right there. Parsing therefore completes
- * before any code after php_request_startup() could install a stream, and it
- * also consumes SG(request_info).content_type_dup on the way.
+ * Must be a SAPI hook, not an assignment to SG(request_info).request_body:
+ * $_POST is built eagerly inside php_request_startup(), so a stream installed
+ * afterwards is already too late.
  *
  * sapi_read_post_block() loops until this returns less than the buffer size,
  * so returning 0 once the body is exhausted terminates the read.
@@ -306,13 +247,9 @@ void EMSCRIPTEN_KEEPALIVE phpw_destroy(void)
 	}
 
 	/*
-	 * php_embed_shutdown() closes a request unconditionally, because in the
-	 * embed contract the one started by php_embed_init() is still open. This
-	 * bridge closes the request after every execution, so there is normally
-	 * none left and shutdown would run against torn-down state. Open one so
-	 * that it has something to close, and deliberately leave it open: closing
-	 * it here would only leave php_embed_shutdown() with a second, bogus
-	 * shutdown to perform.
+	 * php_embed_shutdown() closes a request unconditionally, but this bridge
+	 * closes it after every execution, so there is normally none left. Open one
+	 * for it to close, and leave it open.
 	 */
 	if (!phpw_request_active) {
 		SG(server_context) = &phpw_server_context_sentinel;
@@ -330,21 +267,13 @@ void EMSCRIPTEN_KEEPALIVE phpw_destroy(void)
 /**
  * Publish one CGI-style entry into $_SERVER.
  *
- * The embed SAPI's register_variables handler is php_import_environment_variables(),
- * which copies the host process environment and nothing else. Unlike the CGI
- * SAPI it never sets REQUEST_METHOD, CONTENT_TYPE and friends, so a script that
- * inspects $_SERVER would otherwise see only the process environment.
+ * The embed SAPI sets neither REQUEST_METHOD nor CONTENT_TYPE. The $_SERVER
+ * handler is lazy and rebuilds the array on first access, so materialise it,
+ * then update in place.
  *
- * The auto-global handler for $_SERVER is invoked lazily, on first access, and
- * builds the array from scratch at that point. Writing into
- * PG(http_globals)[TRACK_VARS_SERVER] would therefore be discarded, so the
- * superglobal is materialised first and then updated in place.
- *
- * Note that php_register_variable_ex() must not be used for this: with a NULL
- * track_vars_array it takes an early "nothing to do" path that destroys the
- * zval it was handed, and with the superglobal passed in it takes ownership of
- * the value too. Either way a zval_ptr_dtor() by us is a double free.
- * zend_hash_str_update() is unambiguous -- the hash takes the zval.
+ * Do not use php_register_variable_ex(): it takes ownership of the zval, so a
+ * zval_ptr_dtor() on our side is a double free. zend_hash_str_update() is
+ * unambiguous -- the hash takes the zval.
  */
 static void phpw_set_server_var(const char *name, const char *value)
 {
@@ -371,14 +300,9 @@ static void phpw_set_server_var(const char *name, const char *value)
 /**
  * Start a request, applying any context set by phpw_request_init().
  *
- * Ordering matters here. php_request_startup() runs sapi_activate(), which
- * builds $_SERVER from SG(request_info).query_string via php_hash_environment()
- * and selects the POST handler from content_type -- so both must be set before
- * the call. sapi_activate() then *resets* SG(request_info).request_body to NULL
- * and SG(headers_sent) to 0, so the request body has to be installed after it.
- *
- * $_GET and $_POST themselves are populated lazily: the auto-global handlers
- * read SG(request_info) on first access, which happens while user code runs.
+ * Ordering is load-bearing: sapi_activate() reads query_string and content_type,
+ * then *resets* request_body and headers_sent, so those go in before the call and
+ * the body after it. $_GET and $_POST are populated lazily, on first access.
  */
 static void phpw_request_begin(void)
 {
@@ -391,12 +315,9 @@ static void phpw_request_begin(void)
 	}
 
 	/*
-	 * sapi_activate() guards the whole POST-reading block on
-	 * SG(server_context) being non-NULL, and nothing in the embed SAPI ever
-	 * assigns it, so without this $_POST would always be empty. The pointer is
-	 * only ever passed through to the SAPI callbacks, and the embed
-	 * implementations of send_header()/flush() ignore the argument, so a
-	 * sentinel that is never dereferenced is safe.
+	 * sapi_activate() guards POST reading on SG(server_context) being non-NULL
+	 * and the embed SAPI never sets it, so without this $_POST is always empty.
+	 * The embed send_header()/flush() ignore the argument, so a sentinel is safe.
 	 */
 	SG(server_context) = &phpw_server_context_sentinel;
 
@@ -504,11 +425,9 @@ static char *phpw_dup_result(zval *result)
  * Coerce an evaluated result to a string in place.
  *
  * convert_to_string() throws for an object with no __toString, and that throw
- * is a bailout inside phpw_exec()'s zend_first_try, so the caller would only
- * see "execution aborted". Cast here instead, as zend_operators.c does, where a
- * failure can be reported as itself.
- *
- * On failure the zval stays unconverted, so phpw_exec() returns NULL.
+ * is a bailout inside phpw_exec(), so the caller would only see "execution
+ * aborted". Cast here instead, as zend_operators.c does. On failure the zval
+ * stays unconverted, so phpw_exec() returns NULL.
  */
 static void phpw_cast_result_to_string(zval *zv)
 {
@@ -543,11 +462,11 @@ static void phpw_cast_result_to_string(zval *zv)
  *
  * Evaluates a single expression, per zend_eval_string(): the first statement's
  * value is the result, so `$a = 1; $a + 1;` gives "1". Wrap several statements
- * in an IIFE, as seanmorris/php-wasm documents for pib_exec(). For whole
- * scripts use phpw_run().
+ * in an IIFE, as seanmorris/php-wasm documents for pib_exec(); for whole scripts
+ * use phpw_run().
  *
- * Returns a buffer the caller must release with phpw_free(), or NULL when the
- * expression failed to compile or threw. Use phpw_last_error() for the reason.
+ * Returns a buffer the caller must release with phpw_free(), or NULL on failure,
+ * with the reason from phpw_last_error().
  */
 char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
 {
