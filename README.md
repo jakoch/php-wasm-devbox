@@ -27,7 +27,7 @@ playground — similar to [3v4l](https://3v4l.org/), but running entirely in the
 - **Devcontainer support**: Seamless PHP-WASM development using VSCode or any Devcontainer-compatible editor.
 - **Multi-stage Dockerfile**:
   - **Build stage**: Customizable compilation settings for PHP-WASM.
-  - **Deploy stage**: Minimal, production-ready image based on **Debian Bookworm-slim**.
+  - **Deploy stage**: Minimal, production-ready image based on **Debian Trixie-slim**.
 - **Automated CI/CD releases**: GitHub Actions workflows for publishing artifacts, releases, and container images.
 - **PHP Language Playground**: Provides a small language playground which is released to Github Pages.
 

@@ -59,7 +59,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { debian_codename: "bookworm", debian_version: "12" }
+        - { debian_codename: "trixie", debian_version: "13" }
 
     env:
       GHCR_IMAGE: ghcr.io/${{ github.repository }}
@@ -84,6 +84,10 @@ jobs:
         uses: hadolint/hadolint-action@v3 # https://github.com/hadolint/hadolint-action
         with:
           dockerfile: .devcontainer/debian/${{ matrix.config.debian_codename }}/Dockerfile
+
+      # The trixie and bookworm Dockerfiles must differ only in their FROM lines.
+      - name: 🔍 Check the Dockerfiles are in sync
+        run: ./build-tools/scripts/check-dockerfiles-in-sync.sh
 
       - name: 🔒 Login to Github Container Registry (GHCR)
         if: github.event_name != 'pull_request'

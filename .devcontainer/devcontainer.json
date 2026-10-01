@@ -2,8 +2,9 @@
 	"name": "php-wasm-devbox",
 	"build": {
 		// The repository contains one image:
-		// - "./debian/bookworm/Dockerfile" (default)
-		"dockerfile": "./debian/bookworm/Dockerfile",
+		// - "./debian/trixie/Dockerfile" (default)
+		// - "./debian/bookworm/Dockerfile" (reference copy)
+		"dockerfile": "./debian/trixie/Dockerfile",
 		// Set the context to the repository root,
         // so that the Dockerfile can copy files from the /src folder.
 		"context": "..",

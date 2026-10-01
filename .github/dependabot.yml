@@ -21,7 +21,17 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
-  # Enable automatic version updates for Dockerfile
+  # Enable automatic version updates for the Dockerfiles. Trixie is the default
+  # build. Bookworm is kept as a byte-identical reference copy of it and still
+  # wants base-image updates; drop that entry once bookworm is retired.
+  - package-ecosystem: "docker"
+    directory: "/.devcontainer/debian/trixie"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps(docker): "
+    labels:
+      - "dependencies"
   - package-ecosystem: "docker"
     directory: "/.devcontainer/debian/bookworm"
     schedule:
