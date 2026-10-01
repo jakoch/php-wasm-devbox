@@ -98,7 +98,9 @@ function run(code) {
 
 function lastError() {
   const value = ccall('phpw_last_error', 'string', [], []);
-  return value === 0 ? null : value;
+  // ccall() decodes a NULL char* as '', never as the number 0, so an empty
+  // string is what "no error" looks like from here.
+  return value === '' ? null : value;
 }
 
 function request(method, query, contentType, body, scriptName = '/index.php', uri = '/index.php') {
@@ -173,6 +175,30 @@ check('the Error message is surfaced', lastError(), 'Division by zero');
 check('an undefined method is reported', ccall('phpw_exec', 'number', ['string'], ['(new DateTime())->nope();']), 0);
 // The module must remain usable after every one of those failures.
 check('it still works after failures', exec('2*21'), '42');
+
+console.log('\n# 4b. results that cannot be returned as a string');
+// convert_to_string() throws for an object with no __toString. That throw used
+// to become a bailout inside phpw_exec()'s own zend_first_try, so the caller
+// saw the generic "execution aborted" and lost the real reason.
+check('a bare object returns NULL', ccall('phpw_exec', 'number', ['string'], ['new stdClass();']), 0);
+check('the reason names the class', lastError(), 'Object of class stdClass could not be converted to string');
+check('an object without __toString, via a closure', ccall('phpw_exec', 'number', ['string'], ['(function () { return new ArrayObject([]); })();']), 0);
+check('the reason names that class too', lastError(), 'Object of class ArrayObject could not be converted to string');
+// An object that can be cast is still returned normally.
+check('an object with __toString converts', exec('(function () { $o = new class { public function __toString(): string { return "custom"; } }; return $o; })()'), 'custom');
+// Creating objects is fine; only *returning* one is not. phpw_run() has no
+// return value at all, so it was never affected.
+check('an object created but not returned is fine', exec('(function () { $o = new stdClass(); return 42; })()'), '42');
+check('the module still works', exec('2*21'), '42');
+check('phpw_run() with an object returns 0', run('$o = new stdClass();'), 0);
+check('and reports no error', lastError(), null);
+
+console.log('\n# 4c. phpw_exec() evaluates a single expression');
+// zend_eval_string() returns the value of the *first* statement, so this is 1
+// and not 2. seanmorris/php-wasm documents the same constraint on pib_exec().
+check('only the first statement is the result', exec('$a = 1; $a + 1;'), '1');
+check('an IIFE returns its last value', exec('(function () { $a = 1; return $a + 1; })()'), '2');
+check('a trailing semicolon is fine on a single statement', exec('1 + 1;'), '2');
 
 console.log('\n# 5. each execution gets a fresh request');
 check('a superglobal is readable within one request', exec("array_key_exists('probe', $GLOBALS) ? 'yes' : 'no'"), 'no');

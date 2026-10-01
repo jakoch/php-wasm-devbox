@@ -506,7 +506,68 @@ static char *phpw_dup_result(zval *result)
 }
 
 /**
+ * Coerce an evaluated result to a string in place.
+ *
+ * zend_eval_string() returns whatever type the expression produced, so an int,
+ * float, bool, null or array has to be converted before it can be handed to
+ * JavaScript.
+ *
+ * convert_to_string() cannot be used as-is. For an object it routes through the
+ * class cast handler, which throws when the class has no __toString -- and that
+ * throw is a bailout inside phpw_exec()'s own zend_first_try, so the caller
+ * would only ever see the generic "execution aborted" instead of the real
+ * reason. Do the cast here, where a failure can be reported as itself.
+ *
+ * Mirrors what the engine does for the same case (Zend/zend_operators.c): call
+ * the handler, and only raise afterwards if it failed silently.
+ *
+ * On failure the zval is left untouched and therefore not IS_STRING, which is
+ * how phpw_exec() ends up returning NULL. The reason is in phpw_last_error().
+ */
+static void phpw_cast_result_to_string(zval *zv)
+{
+	char message[256];
+	zval cast;
+
+	if (Z_TYPE_P(zv) != IS_OBJECT) {
+		convert_to_string(zv);
+		return;
+	}
+
+	if (Z_OBJ_HT_P(zv)->cast_object(Z_OBJ_P(zv), &cast, IS_STRING) == SUCCESS) {
+		zval_ptr_dtor(zv);
+		ZVAL_COPY_VALUE(zv, &cast);
+		return;
+	}
+
+	/* zend_std_cast_object_tostring() raises; take it back before reporting. */
+	if (EG(exception)) {
+		zend_clear_exception();
+	}
+
+	snprintf(message, sizeof(message),
+		"Object of class %s could not be converted to string",
+		ZSTR_VAL(Z_OBJCE_P(zv)->name));
+
+	phpw_set_error(message);
+}
+
+/**
  * Evaluate a PHP expression and return its value as a string.
+ *
+ * This evaluates a single *expression*, which is the contract of
+ * zend_eval_string(): the value of the first statement is the result, so
+ * `$a = 1; $a + 1;` returns "1" rather than "2". Wrap several statements in an
+ * immediately invoked function to return their last value:
+ *
+ *     (function () { $a = 1; return $a + 1; })()   -> "2"
+ *
+ * seanmorris/php-wasm documents the same constraint on its pib_exec(). For
+ * whole scripts, including anything that echoes, use phpw_run() instead.
+ *
+ * An object without __toString cannot be returned as a string; that is
+ * reported through phpw_last_error() rather than treated as an execution
+ * failure.
  *
  * Returns a buffer the caller must release with phpw_free(), or NULL when the
  * expression failed to compile or threw. Use phpw_last_error() for the reason.
@@ -569,8 +630,10 @@ char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
 			 *
 			 * Safe only on the success path: on a compile failure ret_zv was
 			 * never written and converting it would read an uninitialised zval.
+			 * A cast failure is recorded by phpw_cast_result_to_string() and
+			 * leaves ret_zv unconverted, so phpw_exec() returns NULL below.
 			 */
-			convert_to_string(&ret_zv);
+			phpw_cast_result_to_string(&ret_zv);
 		}
 	} zend_catch {
 		phpw_set_error("execution aborted");
