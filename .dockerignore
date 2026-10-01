@@ -7,9 +7,10 @@
 .git/
 .github/
 .vscode/
+.pnpm-store/
 .dockerignore
 .editorconfig
-.hadolint.yaml
+.hadolint.yml
 LICENSE
 README.md
 
