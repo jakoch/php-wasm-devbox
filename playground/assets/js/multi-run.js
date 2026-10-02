@@ -84,13 +84,31 @@ class PHP {
         };
 
         // initialize the PHP WASM module
-        const { ccall } = await createPhpModule(phpModuleOptions);
+        // FS as well as ccall: the run path stages the script as a real file,
+        // for the reason given in playground.js.
+        const { ccall, FS } = await createPhpModule(phpModuleOptions);
 
         // get the PHP version
         this.#version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
 
-        // Create the runPhp function that will execute the PHP code
-        this.#runPhp = (code) => ccall("phpw_run", null, ["string"], [`?>${code}`]);
+        // Create the runPhp function that will execute the PHP code.
+        // Staged as a real file and run with phpw(), not eval'd with a `?>`
+        // prefix: see the matching comment in playground.js.
+        this.#runPhp = async (code) => {
+            try {
+                FS.mkdir('/run');
+            } catch (e) {
+                // EEXIST
+            }
+            FS.writeFile('/run/script.php', code);
+            const status = ccall("phpw", null, ["string"], ['/run/script.php']);
+            try {
+                FS.unlink('/run/script.php');
+            } catch (e) {
+                // Already gone
+            }
+            return status;
+        };
 
         return this.#runPhp;
     }
@@ -107,7 +125,7 @@ class PHP {
             const runPhp = await this.#loadWasmModule(php_version);
             const startTime = performance.now();
 
-            runPhp(code); // directly run
+            await runPhp(code); // directly run
 
             const endTime = performance.now();
             const elapsedTime = endTime - startTime;

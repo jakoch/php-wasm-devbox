@@ -22,6 +22,11 @@ import { Timer } from './timer.js';
 const VLD_DIR = '/vld';
 const SNIPPET_PATH = `${VLD_DIR}/snip.php`;
 
+// Where a normal Run stages the editor contents. A real file, executed through
+// phpw(), so the engine parses it exactly as it would any script on disk.
+const RUN_DIR = '/run';
+const RUN_SNIPPET = `${RUN_DIR}/script.php`;
+
 /**
  * The class PHP is used to manage the PHP WASM module and its interactions.
  *
@@ -120,13 +125,38 @@ class PHP {
         // Keep the whole namespace, not just ccall: the opcode dump needs FS to
         // stage the snippet in the in-memory filesystem before phpw() compiles it.
         this.#module = await createPhpModule(phpModuleOptions);
-        const { ccall } = this.#module;
+        const { ccall, FS } = this.#module;
 
         // get the PHP version
         this.#version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
 
-        // Create the runPhp function that will execute the PHP code
-        this.#runPhp = (code) => ccall("phpw_run", null, ["string"], [`?>${code}`]);
+        // Create the runPhp function that will execute the PHP code.
+        //
+        // The editor contents are staged as a real file and run with phpw(),
+        // rather than eval'd. phpw_run() compiles through zend_eval_string(),
+        // which expects code *without* an opening tag, so the old `?>${code}`
+        // wrapper existed to close that implicit mode and let the user's own
+        // <?php reopen it. That trick is what made declare(strict_types=1)
+        // fail -- the declaration was no longer the first statement in the
+        // script -- and it also emitted a stray `?>` ahead of the program's own
+        // output. A file needs no such translation, and it puts the run path on
+        // the same footing as getOpcodes(), so both report identical line
+        // numbers for the same editor content.
+        this.#runPhp = async (code) => {
+            try {
+                FS.mkdir(RUN_DIR);
+            } catch (e) {
+                // EEXIST: the directory outlives individual runs, by design.
+            }
+            FS.writeFile(RUN_SNIPPET, code);
+            const status = ccall("phpw", null, ["string"], [RUN_SNIPPET]);
+            try {
+                FS.unlink(RUN_SNIPPET);
+            } catch (e) {
+                // Already gone; nothing to clean up.
+            }
+            return status;
+        };
 
         return this.#runPhp;
     }
@@ -143,7 +173,7 @@ class PHP {
             const runPhp = await this.#loadWasmModule(php_version);
             const startTime = performance.now();
 
-            runPhp(code); // directly run
+            await runPhp(code); // directly run
 
             const endTime = performance.now();
             const elapsedTime = endTime - startTime;
