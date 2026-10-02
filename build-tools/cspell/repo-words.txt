@@ -99,6 +99,7 @@ initialised
 initialises
 initialising
 materialise
+neighbouring
 parameterised
 recognises
 relinks
