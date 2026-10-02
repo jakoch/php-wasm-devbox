@@ -23,22 +23,6 @@ ARG NODE_VERSION=24.21.0
 ARG NODE_SHA256=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
 # VLD is a debug-only extension; it must not end up in the shipped artifact.
 ARG ENABLE_VLD=0
-
-# Node for running the module, its tests and the CLI demo. Deliberately NOT on
-# PATH ahead of emsdk: emscripten pins the node it ships with, and shadowing it
-# would change what emcc and `make` use. build-tools/scripts/test-bridge.sh
-# puts this one first on PATH for the test run only.
-RUN set -e; \
-    echo "Install Node ${NODE_VERSION}" && \
-    curl -fsSL -o /tmp/node.tar.xz \
-      "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" && \
-    echo "${NODE_SHA256}  /tmp/node.tar.xz" > /tmp/node.sha256 && \
-    sha256sum -c /tmp/node.sha256 && \
-    mkdir -p /usr/local/node24 && \
-    tar -xJf /tmp/node.tar.xz -C /usr/local/node24 --strip-components=1 && \
-    rm -f /tmp/node.tar.xz /tmp/node.sha256 && \
-    /usr/local/node24/bin/node --version
-
 # +-----------------------------+
 # | METADATA                    |
 # +-----------------------------+
@@ -83,6 +67,21 @@ RUN echo "Packages" && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     echo "Configure git to avoid warnings" && \
     git config --global advice.detachedHead false
+
+# Node for running the module, its tests and the CLI demo. Deliberately NOT on
+# PATH ahead of emsdk: emscripten pins the node it ships with, and shadowing it
+# would change what emcc and `make` use. build-tools/scripts/test-bridge.sh
+# puts this one first on PATH for the test run only.
+RUN set -e; \
+    echo "Install Node ${NODE_VERSION}" && \
+    curl -fsSL -o /tmp/node.tar.xz \
+      "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" && \
+    echo "${NODE_SHA256}  /tmp/node.tar.xz" > /tmp/node.sha256 && \
+    sha256sum -c /tmp/node.sha256 && \
+    mkdir -p /usr/local/node24 && \
+    tar -xJf /tmp/node.tar.xz -C /usr/local/node24 --strip-components=1 && \
+    rm -f /tmp/node.tar.xz /tmp/node.sha256 && \
+    /usr/local/node24/bin/node --version
 
 RUN set -e; \
     echo "Install Emscripten SDK" && \
