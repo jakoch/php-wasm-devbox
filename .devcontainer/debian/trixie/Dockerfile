@@ -151,18 +151,23 @@ RUN echo "Clone VLD extension" && \
     git clone https://github.com/derickr/vld.git /local/src/php-src/ext/vld --branch $VLD_VERSION --single-branch --depth 1 && \
     cd /local/src/php-src/ && \
     ./buildconf --force && \
-    ./configure --help | grep -q -- '--enable-vld' && \
+    ./configure --help > /tmp/configure-help.txt && \
+    grep -q -- '--enable-vld' /tmp/configure-help.txt && \
     echo "configure knows about VLD"
 
 # ext/vld/config.m4 runs `${PHP_CONFIG} --version` and aborts configure unless it
 # reports >= 7.0.0. This is a --disable-cli cross build, so no php-config exists
 # to ask and the check fails on an empty string. PHP_CONFIG is referenced from
 # nowhere else in configure, so a stub keeps VLD itself unpatched.
+#
+# Written with double quotes and an escaped \${1:-}: the argument has to reach
+# the script literally while ${PHP_VERSION} has to expand here, and single
+# quotes cannot express both (hadolint SC2016 rejects the latter outright).
 RUN printf '%s\n' \
 	'#!/bin/sh' \
-	'case "${1:-}" in' \
-	'	--version) echo "'"${PHP_VERSION}"'" ;;' \
-	'	*) exit 1 ;;' \
+	"case \"\${1:-}\" in" \
+	"	--version) echo \"${PHP_VERSION}\" ;;" \
+	"	*) exit 1 ;;" \
 	'esac' \
 	> /usr/local/bin/php-config-vld-stub && \
 	chmod +x /usr/local/bin/php-config-vld-stub && \
