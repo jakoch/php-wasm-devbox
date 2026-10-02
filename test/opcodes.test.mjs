@@ -70,7 +70,7 @@ const assert = (name, ok) => {
   problems.push(name);
 };
 
-const { escapeHtml, renderOpcodeDump, renderOpcodeLine, setupResultTabs } =
+const { escapeHtml, renderOpcodeDump, renderOpcodeLine, setupResultTabs, parseDiagnostics, describeDiagnostics, renderDiagnostics } =
   await import(pathToFileURL(resolve(repoRoot, 'playground/assets/js/playground.js')).href);
 
 console.log(`# version ${version}`);
@@ -110,20 +110,41 @@ console.log('\n# 3. dump rendering');
   const dump = [
     'filename:       /vld/snip.php',
     'number of ops:  2',
+    'line      #* E I O op                               fetch          ext  return  operands',
     '-----------------------------------------------------------------------------------------',
     "    1     0  E >   ECHO                                                         'hi'",
+    '          1      > RETURN                                                       1',
+    '',
+    'branch: #  0; line:     1-    1; sop:     0; eop:     1; out0:  -2',
   ].join('\n');
 
   const rendered = renderOpcodeDump(dump);
   assert('metadata is classed', rendered.html.includes('<span class="opc-meta">filename:'));
-  assert('ruler is classed', rendered.html.includes('<span class="opc-rule">'));
-  check('line count', rendered.total, 4);
+  assert('rule is classed', rendered.html.includes('<span class="opc-rule">'));
+
+  // The ruler must be isolated so CSS can pin it, and must not be re-sliced as
+  // if it were a listing row.
+  assert('ruler is isolated', rendered.rulerHtml.includes('#* E I O op'));
+  assert('ruler is not in the body', !rendered.bodyHtml.includes('#* E I O op'));
+  assert('ruler is not in the preamble', !rendered.preambleHtml.includes('#* E I O op'));
+  assert('listing rows are in the body', rendered.bodyHtml.includes('opc-name">ECHO'));
+  assert('trailing branch summary is kept', rendered.bodyHtml.includes('branch: #'));
+
+  // Shown/total now count listing lines only; preamble and ruler are always kept.
+  check('body line count', rendered.total, 5);
   check('not truncated', rendered.truncated, false);
 
-  const capped = renderOpcodeDump('a\nb\nc\nd\ne', 2);
-  check('cap applies', capped.shown, 2);
+  const capped = renderOpcodeDump(dump, 2);
+  check('cap applies to the listing', capped.shown, 2);
   check('total ignores the cap', capped.total, 5);
   check('truncation is reported', capped.truncated, true);
+  assert('ruler survives the cap', capped.rulerHtml.includes('#* E I O op'));
+  assert('omitted rows are announced', capped.bodyHtml.includes('3 more lines not shown'));
+
+  // A dump with no ruler at all must not lose content.
+  const headerless = renderOpcodeDump('a\nb\nc');
+  check('headerless ruler is empty', headerless.rulerHtml, '');
+  check('headerless preamble keeps everything', headerless.preambleHtml, 'a\nb\nc');
 }
 
 console.log('\n# 4. tab controller');
@@ -213,7 +234,68 @@ console.log('\n# 4. tab controller');
   assert('focus moved with selection', tabs[2].focused === true);
 }
 
-console.log('\n# 5. getOpcodes against a real module');
+console.log('\n# 5. diagnostic severity');
+{
+  const stderr = [
+    'PHP Deprecated:  Automatic conversion of false to array is deprecated in /vld/x.php on line 3',
+    'PHP Notice:  Undefined variable: $y in /vld/x.php on line 4',
+    'PHP Warning:  Undefined array key "z" in /vld/x.php on line 5',
+    'PHP Fatal error:  Uncaught Error: boom in /vld/x.php:9',
+    'Stack trace:',
+    '#0 /vld/x.php(9): {main}',
+  ].join('\n');
+
+  const summary = parseDiagnostics(stderr);
+  check('all four counted', summary.total, 4);
+  check('fatal', summary.counts.fatal, 1);
+  check('warning', summary.counts.warning, 1);
+  check('notice', summary.counts.notice, 1);
+  check('deprecated', summary.counts.deprecated, 1);
+
+  // The whole point: a fatal must outrank a page of deprecations.
+  check('worst is fatal', summary.worst.key, 'fatal');
+  check('badge is danger', summary.badgeClass, 'text-bg-danger');
+
+  // Stack frames are context for the fatal, not new events.
+  assert('stack frames are not counted', !summary.entries.some((e) => e.text.startsWith('#0')));
+
+  check('summary reads most severe first', describeDiagnostics(summary), '1 error, 1 warning, 1 notice, 1 deprecation');
+
+  // Badge colour must track the worst severity actually present.
+  check('deprecation alone is not danger', parseDiagnostics('PHP Deprecated:  x in /a.php on line 1').badgeClass, 'text-bg-secondary');
+  check('notice alone is info', parseDiagnostics('PHP Notice:  x in /a.php on line 1').badgeClass, 'text-bg-info');
+
+  // A parse error means nothing ran; it is fatal in effect.
+  check('parse error is fatal', parseDiagnostics('PHP Parse error:  syntax error in /a.php on line 1').counts.fatal, 1);
+  check('strict standards are warnings', parseDiagnostics('PHP Strict Standards:  x in /a.php on line 1').counts.warning, 1);
+  check('recoverable fatal is fatal', parseDiagnostics('PHP Recoverable fatal error:  x in /a.php on line 1').counts.fatal, 1);
+
+  check('empty input', parseDiagnostics('').total, 0);
+  check('null input', parseDiagnostics(null).total, 0);
+  check('placeholder text is not a diagnostic', parseDiagnostics('No Errors!').total, 0);
+  check('clean summary', describeDiagnostics(parseDiagnostics('')), 'No errors in the last run.');
+
+  // Rendering tints per line, escapes everything, and preserves blank lines.
+  const html = renderDiagnostics(stderr);
+  assert('fatal line is tinted', html.includes('<span class="sev-fatal">PHP Fatal error'));
+  assert('deprecation line is tinted', html.includes('<span class="sev-deprecated">PHP Deprecated'));
+  assert('unclassified line is plain', html.includes('Stack trace:'));
+  assert('no raw angle brackets', !html.replace(/<\/?span[^>]*>/g, '').includes('<'));
+
+  // Regression guard for the WP-01.7 fix: a blank line in stderr must not be
+  // dropped just because the neighbouring lines are now wrapped in spans.
+  const withBlanks = renderDiagnostics('PHP Notice:  a\n\nPHP Warning:  b\n');
+  assert('blank lines survive', withBlanks.includes('</span>\n\n<span'));
+
+  // Anything a script writes to stderr that is not a diagnostic is escaped.
+  const hostile = renderDiagnostics('<script>alert(1)</script>');
+  assert('hostile stderr is escaped', !hostile.includes('<script>'));
+
+  // Single diagnostic reads in the singular.
+  check('singular', describeDiagnostics(parseDiagnostics('PHP Warning:  x in /a.php on line 1')), '1 warning');
+}
+
+console.log('\n# 6. getOpcodes against a real module');
 {
   const createPhpModule = (await import(pathToFileURL(modulePath).href)).default;
 

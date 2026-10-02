@@ -373,36 +373,79 @@ function highlightOpcodeOperands(text) {
 }
 
 /**
- * Turn a whole dump into highlighted, size-capped HTML.
+ * Split a raw dump into the three regions the UI renders separately.
+ *
+ * VLD's dump is fixed-width text, not a table, so there is no `<table>` to hang
+ * a `<thead>` off. Instead the ruler line — the one reading
+ * `line      #* E I O op ... operands` — is isolated so the view can pin it above
+ * the scrolling listing with `position: sticky`.
+ *
+ * The ruler is found by its own column headings rather than by offset: the
+ * preamble length varies (dumping a function adds a `function name:` line), and
+ * the headings are what distinguish it from a data row.
+ *
+ * @param {string[]} lines  Dump lines, trailing blank already removed
+ * @returns {{ preamble: string[], ruler: string|null, body: string[] }}
+ */
+function splitOpcodeDump(lines) {
+    const rulerIndex = lines.findIndex((line) => /^line\s+#\*\s+E\s+I\s+O\s+op\b/.test(line));
+
+    if (rulerIndex === -1) return { preamble: lines, ruler: null, body: [] };
+
+    return {
+        preamble: lines.slice(0, rulerIndex),
+        ruler: lines[rulerIndex],
+        body: lines.slice(rulerIndex + 1),
+    };
+}
+
+/**
+ * Turn a whole dump into highlighted, size-capped HTML, split by region.
  *
  * A large dump is a real possibility (a few thousand opcodes is a few hundred KB
  * of markup), so the line count is capped and the truncation is reported rather
- * than silently applied.
+ * than silently applied. The cap applies to the listing only: the preamble and
+ * ruler are what make a truncated listing interpretable, so they are always kept.
+ *
+ * `html` is the three regions concatenated, for callers that do not need the
+ * split, and for tests.
  *
  * @param {string} dump        Raw dump text from PHP.getOpcodes()
- * @param {number} maxLines    Cap on rendered lines
- * @returns {{ html: string, shown: number, total: number, truncated: boolean }}
+ * @param {number} maxLines    Cap on rendered body lines
+ * @returns {{ preambleHtml: string, rulerHtml: string, bodyHtml: string, html: string,
+ *            shown: number, total: number, truncated: boolean }}
  */
 function renderOpcodeDump(dump, maxLines = 4000) {
     const allLines = String(dump).split('\n');
     // A trailing newline yields one empty tail element; it is not a line.
     if (allLines.length && allLines[allLines.length - 1] === '') allLines.pop();
 
-    const shown = allLines.slice(0, maxLines);
+    const { preamble, ruler, body } = splitOpcodeDump(allLines);
+    const shown = body.slice(0, maxLines);
+
+    const decorate = (line) => {
+        if (/^-{20,}$/.test(line)) return `<span class="opc-rule">${escapeHtml(line)}</span>`;
+        if (/^(filename|function name|number of ops|compiled vars):/.test(line)) {
+            return `<span class="opc-meta">${escapeHtml(line)}</span>`;
+        }
+        return renderOpcodeLine(line);
+    };
+
+    const preambleHtml = preamble.map(decorate).join('\n');
+    const rulerHtml = ruler === null ? '' : escapeHtml(ruler);
+    const bodyHtml = shown.map(decorate).join('\n');
+    const truncatedHtml = body.length > shown.length
+        ? `\n<span class="opc-meta">… ${body.length - shown.length} more lines not shown</span>`
+        : '';
 
     return {
-        html: shown
-            .map((line) => {
-                if (/^-{20,}$/.test(line)) return `<span class="opc-rule">${escapeHtml(line)}</span>`;
-                if (/^(filename|function name|number of ops|compiled vars):/.test(line)) {
-                    return `<span class="opc-meta">${escapeHtml(line)}</span>`;
-                }
-                return renderOpcodeLine(line);
-            })
-            .join('\n'),
+        preambleHtml,
+        rulerHtml,
+        bodyHtml: bodyHtml + truncatedHtml,
+        html: [preambleHtml, rulerHtml, bodyHtml + truncatedHtml].filter(Boolean).join('\n'),
         shown: shown.length,
-        total: allLines.length,
-        truncated: allLines.length > shown.length,
+        total: body.length,
+        truncated: body.length > shown.length,
     };
 }
 
@@ -781,6 +824,95 @@ function saveToFile(content, filename) {
 }
 
 // uiElements object to manage UI element data using getter and setter properties
+/**
+ * Severity of a PHP diagnostic, most severe first.
+ *
+ * `level` orders them for the badge: a single fatal must outrank a screenful
+ * of deprecations, otherwise the badge teaches people to ignore it.
+ * `Recoverable fatal error` is level 3 because the request still died.
+ */
+const DIAGNOSTIC_SEVERITIES = [
+    { key: 'fatal', level: 3, singular: 'error', plural: 'errors', badgeClass: 'text-bg-danger', lineClass: 'sev-fatal', pattern: /^PHP (?:Fatal error|Recoverable fatal error|Parse error)\b/i },
+    { key: 'warning', level: 2, singular: 'warning', plural: 'warnings', badgeClass: 'text-bg-warning', lineClass: 'sev-warning', pattern: /^PHP (?:Warning|Strict Standards)\b/i },
+    { key: 'notice', level: 1, singular: 'notice', plural: 'notices', badgeClass: 'text-bg-info', lineClass: 'sev-notice', pattern: /^PHP Notice\b/i },
+    { key: 'deprecated', level: 0, singular: 'deprecation', plural: 'deprecations', badgeClass: 'text-bg-secondary', lineClass: 'sev-deprecated', pattern: /^PHP Deprecated\b/i },
+];
+
+const NO_DIAGNOSTICS = Object.freeze({
+    total: 0, counts: Object.freeze({ fatal: 0, warning: 0, notice: 0, deprecated: 0 }),
+    worst: null, badgeClass: 'text-bg-danger', entries: Object.freeze([]),
+});
+
+/**
+ * Classify every diagnostic line in a stderr blob.
+ *
+ * Only lines that look like PHP diagnostics are classified; the placeholder
+ * text ("No Errors!") and blank lines are not, and neither are the stack
+ * trace frames that follow a fatal — those are context, not new events.
+ *
+ * @returns {{ total: number, counts: object, worst: object|null, badgeClass: string, entries: Array }}
+ */
+function parseDiagnostics(text) {
+    if (!text) return NO_DIAGNOSTICS;
+
+    const counts = { fatal: 0, warning: 0, notice: 0, deprecated: 0 };
+    const entries = [];
+    let worst = null;
+
+    for (const raw of String(text).split('\n')) {
+        const line = raw.trim();
+        if (!line) continue;
+
+        const match = DIAGNOSTIC_SEVERITIES.find((s) => s.pattern.test(line));
+        if (!match) continue;
+
+        counts[match.key]++;
+        if (!worst || match.level > worst.level) worst = match;
+        entries.push({ severity: match, text: raw });
+    }
+
+    const total = entries.length;
+    if (!total) return NO_DIAGNOSTICS;
+
+    return { total, counts, worst, badgeClass: worst.badgeClass, entries };
+}
+
+/** "1 error, 2 warnings", ordered most severe first. */
+function describeDiagnostics(summary) {
+    if (!summary.total) return 'No errors in the last run.';
+
+    const parts = DIAGNOSTIC_SEVERITIES
+        .filter((s) => summary.counts[s.key] > 0)
+        .map((s) => `${summary.counts[s.key]} ${summary.counts[s.key] === 1 ? s.singular : s.plural}`);
+
+    return parts.join(', ');
+}
+
+/**
+ * Render stderr with a severity tint per diagnostic line.
+ *
+ * Stays a single text blob so that copy/paste and screen-reader reading order
+ * are unchanged; only the colour differs. Everything is escaped, because
+ * stderr can contain anything a script chose to print.
+ */
+function renderDiagnostics(text) {
+    if (!text) return '';
+
+    const summary = parseDiagnostics(text);
+    if (!summary.total) return escapeHtml(text);
+
+    const byLine = new Map(summary.entries.map((e) => [e.text, e.severity.lineClass]));
+    return String(text)
+        .split('\n')
+        .map((line) => {
+            const cls = byLine.get(line);
+            return cls
+                ? `<span class="${cls}">${escapeHtml(line)}</span>`
+                : escapeHtml(line);
+        })
+        .join('\n');
+}
+
 const uiElements = {
     get phpVersionDropdown() {
         const phpVersionDropdown = document.getElementById("php-version-switcher");
@@ -811,7 +943,10 @@ const uiElements = {
     set output_error(value) {
         const outputElement = document.getElementById("standard-error-output");
         if (outputElement) {
-            outputElement.textContent = value || "No Errors!";
+            // innerHTML, not textContent: the severity tint is per line. Every
+            // line is escaped inside renderDiagnostics(), and the getter below
+            // reads textContent, so copying the panel still yields plain text.
+            outputElement.innerHTML = value ? renderDiagnostics(value) : 'No Errors!';
         }
     },
     get isOutputModeHtml() {
@@ -1011,20 +1146,116 @@ if (typeof document !== 'undefined') {
 
     const resultTabs = setupResultTabs(document);
 
+    const outputAlertViewButton = document.getElementById("output-alert-view");
+    if (outputAlertViewButton) {
+        outputAlertViewButton.addEventListener("click", () => {
+            resultTabs?.show('errors');
+            document.getElementById("tab-errors")?.focus();
+        });
+    }
+
+    /* Widen toggle
+     *
+     * The VLD listing is ~90 fixed-width columns, which is wider than the
+     * half-width result column. Widen collapses the editor and gives the whole
+     * row to the result card.
+     *
+     * Hiding the editor is `display: none`, which cannot be transitioned and
+     * leaves Monaco laid out at zero width. `editor.layout()` is mandatory on
+     * restore or the editor renders at the wrong size, so it is called on the
+     * next frame — and once more on a timer, because the layout settles after
+     * the flexbox has reflowed.
+     */
+    const widenToggleButton = document.getElementById("widen-toggle-button");
+    const editorRow = document.getElementById("editor-container");
+    let widened = false;
+
+    function relayoutEditor() {
+        const instance = editor?.editorInstance;
+        if (instance && typeof instance.layout === 'function') instance.layout();
+    }
+
+    function setWidened(next) {
+        widened = next;
+        if (editorRow) editorRow.classList.toggle('widened', widened);
+
+        if (widenToggleButton) {
+            widenToggleButton.setAttribute('aria-pressed', String(widened));
+            const label = widenToggleButton.querySelector('[data-widen-label]');
+            if (label) label.textContent = widened ? 'Narrow' : 'Widen';
+        }
+
+        requestAnimationFrame(() => {
+            relayoutEditor();
+            setTimeout(relayoutEditor, 200);
+        });
+    }
+
+    if (widenToggleButton && editorRow) {
+        widenToggleButton.addEventListener("click", () => setWidened(!widened));
+
+        // Escape is the conventional way out of a full-width mode.
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && widened) setWidened(false);
+        });
+    }
+
     // Surface the Errors tab when a run produced diagnostics. The tab itself is
     // never switched to automatically: auto-run would then yank the view away
     // from whatever the user was reading on every tick.
     const errorBadge = document.getElementById("error-badge");
+    const errorBadgeLive = document.getElementById("error-badge-live");
+    const outputAlertBanner = document.getElementById("output-alert-banner");
+    const outputAlertText = document.getElementById("output-alert-text");
 
-    function updateErrorBadge(count) {
-        if (!errorBadge) return;
-        errorBadge.textContent = String(count);
-        errorBadge.classList.toggle('d-none', count === 0);
+    function updateErrorBadge(summary) {
+        if (errorBadge) {
+            errorBadge.textContent = String(summary.total);
+            errorBadge.classList.toggle('d-none', summary.total === 0);
+            errorBadge.className = `badge ms-1 ${summary.badgeClass}`;
+        }
+
+        // A dedicated live region, not the badge itself. Announcing the badge
+        // would say a bare "3"; announcing the whole Errors panel would re-read
+        // the entire stderr, which on a 2-second auto-run tick is unusable.
+        // Only write when the text changes, so an unchanged result is silent.
+        const announcement = describeDiagnostics(summary);
+        if (errorBadgeLive && errorBadgeLive.textContent !== announcement) {
+            errorBadgeLive.textContent = announcement;
+        }
+
+        // Passive peek banner on the Output tab. It advertises, it does not
+        // switch: same reasoning as the badge above.
+        if (outputAlertBanner && outputAlertText) {
+            const showBanner = summary.total > 0;
+            outputAlertBanner.hidden = !showBanner;
+            if (showBanner && outputAlertText.textContent !== announcement) {
+                outputAlertText.textContent = announcement;
+            }
+        }
     }
 
     /* Opcode dump */
 
-    const opcodeOutput = document.getElementById("opcode-output");
+    const opcodePreamble = document.getElementById("opcode-preamble");
+    const opcodeRuler = document.getElementById("opcode-ruler");
+    const opcodeBody = document.getElementById("opcode-body");
+
+    /**
+     * Replace the dump with a single line of plain text.
+     *
+     * Writes into the body region rather than the container: assigning to the
+     * container's textContent would discard the preamble/ruler/body elements and
+     * leave the next successful dump writing into detached nodes.
+     */
+    function showOpcodeMessage(text) {
+        if (opcodePreamble) opcodePreamble.innerHTML = '';
+        if (opcodeRuler) {
+            opcodeRuler.innerHTML = '';
+            opcodeRuler.hidden = true;
+        }
+        if (opcodeBody) opcodeBody.textContent = text;
+    }
     const opcodeStatus = document.getElementById("opcode-status");
     const opcodeVerbosity = document.getElementById("opcode-verbosity");
     const dumpOpcodesButton = document.getElementById("dump-opcodes-button");
@@ -1038,19 +1269,6 @@ if (typeof document !== 'undefined') {
 
     function setOpcodeStatus(text) {
         if (opcodeStatus) opcodeStatus.textContent = text;
-    }
-
-    /**
-     * Count diagnostic lines for the Errors tab badge.
-     *
-     * Only lines that look like PHP diagnostics count; the placeholder text
-     * ("No Errors!") and blank lines do not.
-     */
-    function countDiagnosticLines(text) {
-        if (!text) return 0;
-        return String(text)
-            .split('\n')
-            .filter((line) => /^PHP (Warning|Notice|Fatal error|Deprecated|Parse error|Strict Standards)/i.test(line.trim())).length;
     }
 
     async function dumpOpcodes() {
@@ -1077,7 +1295,14 @@ if (typeof document !== 'undefined') {
             opcodeDumpText = dump;
             const rendered = renderOpcodeDump(dump);
 
-            if (opcodeOutput) opcodeOutput.innerHTML = rendered.html;
+            // The three regions go to three elements so the ruler can be pinned
+            // by CSS while the listing scrolls underneath it.
+            if (opcodePreamble) opcodePreamble.innerHTML = rendered.preambleHtml;
+            if (opcodeRuler) {
+                opcodeRuler.innerHTML = rendered.rulerHtml;
+                opcodeRuler.hidden = !rendered.rulerHtml;
+            }
+            if (opcodeBody) opcodeBody.innerHTML = rendered.bodyHtml;
 
             const bytes = new Blob([dump]).size;
             setOpcodeStatus(
@@ -1086,9 +1311,7 @@ if (typeof document !== 'undefined') {
             );
         } catch (error) {
             opcodeDumpText = '';
-            if (opcodeOutput) {
-                opcodeOutput.textContent = error.message || String(error);
-            }
+            showOpcodeMessage(error.message || String(error));
             setOpcodeStatus('Dump failed.');
         } finally {
             opcodeDumping = false;
@@ -1194,7 +1417,7 @@ if (typeof document !== 'undefined') {
         uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
-        updateErrorBadge(countDiagnosticLines(result.output_error));
+        updateErrorBadge(parseDiagnostics(result.output_error));
         // Highlight error in editor if present
         let errorInfo = parsePhpError(result.output_error);
         if (!errorInfo) errorInfo = parsePhpError(result.output);
@@ -1203,7 +1426,7 @@ if (typeof document !== 'undefined') {
 
     function handlePhpRunError(err) {
         uiElements.output_error = err.message;
-        updateErrorBadge(countDiagnosticLines(err.message));
+        updateErrorBadge(parseDiagnostics(err.message));
         setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
     }
 
@@ -1315,7 +1538,7 @@ if (typeof document !== 'undefined') {
                 uiElements.output = '';
                 updateErrorBadge(0);
                 opcodeDumpText = '';
-                if (opcodeOutput) opcodeOutput.textContent = 'Ready!';
+                showOpcodeMessage('Ready!');
                 setOpcodeStatus('Compile the editor contents to see the opcodes.');
                 if (resultTabs) resultTabs.show('output');
                 uiElements.output_error = '';
@@ -1401,4 +1624,4 @@ if (typeof document !== 'undefined') {
 }
 
 /* Exported so a Node test harness can import them; unused by the page itself. */
-export { escapeHtml, renderOpcodeLine, renderOpcodeDump, setupResultTabs, parsePhpError };
+export { escapeHtml, renderOpcodeLine, renderOpcodeDump, setupResultTabs, parsePhpError, parseDiagnostics, describeDiagnostics, renderDiagnostics };

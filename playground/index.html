@@ -216,7 +216,7 @@
     <!-- Editor -->
     <div id="editor-container" class="row" role="region" aria-label="Editor and Output Panels">
       <!-- Left Side (Editor) -->
-      <div id="left" class="col-6" role="region" aria-label="Editor Panel">
+      <div id="left" class="col-12 col-lg-6" role="region" aria-label="Editor Panel">
         <div id="editor-wrapper" class="card bg-dark h-100">
 
           <!-- Row 1: Code Editor Controls -->
@@ -252,8 +252,7 @@
               <select id="auto-run-interval-select" class="form-select form-select-sm"
                 style="width: auto; min-width: 70px; display: inline-block; vertical-align: middle;"
                 title="Set Auto Run Interval" tabindex="0" aria-label="Set Auto Run Interval">
-                <!-- Placeholder is disabled and deliberately NOT selected: two
-                     selected options is invalid, and the real default is 2s. -->
+                <!-- Placeholder is disabled and deliberately NOT selected: two selected options is invalid, and the real default is 2s. -->
                 <option value="" disabled>Select Interval</option>
                 <option value="2" selected>2s</option>
                 <option value="4">4s</option>
@@ -397,13 +396,11 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
       </div> <!-- /#left -->
 
       <!-- Right Side (Output) -->
-      <div id="right" class="col-6" role="region" aria-label="Result Panels">
+      <div id="right" class="col-12 col-lg-6" role="region" aria-label="Result Panels">
 
         <div id="result-card" class="card bg-dark h-100">
 
-          <!-- Tab strip. The result panels are tabs rather than stacked cards
-               because the opcode dump is tall, and stacking three of them in a
-               half-width column would leave almost nothing visible. -->
+          <!-- Tab strip. The result panels are tabs rather than stacked cards because the opcode dump is tall, and stacking three of them in a half-width column would leave almost nothing visible. -->
           <div id="result-tabs-header"
             class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
 
@@ -421,6 +418,7 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
                   data-result-tab="errors" aria-selected="false" aria-controls="panel-errors" tabindex="-1">
                   <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                   <span class="ps-1">Errors</span>
+                  <!-- aria-hidden because #error-badge-live carries the same information as a sentence. Announcing a bare number here would say "3", which means nothing on its own. -->
                   <span id="error-badge" class="badge text-bg-danger ms-1 d-none" aria-hidden="true">0</span>
                 </button>
               </li>
@@ -432,6 +430,16 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
                 </button>
               </li>
             </ul>
+
+            <!-- Widening gives the result card the whole row and collapses the editor. It exists because the VLD listing is ~90 fixed-width columns, which is wider than a half-width column. Escape exits. -->
+            <button id="widen-toggle-button" class="btn btn-sm btn-outline-light" type="button"
+              aria-pressed="false" title="Give the result panel the full width — useful for reading opcode dumps">
+              <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
+              <span class="ps-1" data-widen-label>Widen</span>
+            </button>
+
+            <!-- One polite live region for the diagnostic summary. It replaces both the badge (which would announce a bare number) and the Errors panel (which would re-read the whole stderr on every auto-run tick). -->
+            <span id="error-badge-live" class="visually-hidden" role="status" aria-live="polite"></span>
 
             <!-- Toggle Output Type: raw text or HTML -->
             <div class="form-check form-switch text-white ms-2" data-result-tab-toolbar="output">
@@ -482,6 +490,17 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
 
             <!-- Output -->
             <div id="panel-output" role="tabpanel" aria-labelledby="tab-output" tabindex="0">
+
+              <!-- Passive peek at diagnostics, shown on the Output tab so a user never has to know the Errors tab exists to notice a failure. It never switches tabs by itself: on a 2s auto-run tick that would yank the view away continuously. -->
+              <div id="output-alert-banner" class="alert alert-warning py-1 px-2 mb-2 d-flex align-items-center gap-2"
+                hidden>
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span id="output-alert-text" class="small flex-grow-1"></span>
+                <button id="output-alert-view" type="button" class="btn btn-sm btn-outline-dark py-0">
+                  View
+                </button>
+              </div>
+
               <pre id="standard-output" class="p-2 border border-dark rounded pre-direct text-white m-0"
                 aria-label="Standard Output" tabindex="0">Ready!</pre>
             </div>
@@ -497,8 +516,14 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
               <div class="d-flex justify-content-between align-items-center px-1 pb-1">
                 <span id="opcode-status" class="small text-white-50">Compile the editor contents to see the opcodes.</span>
               </div>
-              <pre id="opcode-output" class="p-2 border border-dark rounded pre-direct text-white m-0"
-                aria-label="Opcode dump" aria-live="polite" tabindex="0">Ready!</pre>
+
+              <!-- One scroll container, three stacked children. The ruler is its own element so CSS can pin it while the listing scrolls; the listing is a <pre> so the fixed-width columns stay aligned. There is deliberately no aria-live on this region: it holds hundreds of lines and a screen reader would read all of them. #opcode-status is the announcer. -->
+              <div id="opcode-output" class="p-2 border border-dark rounded pre-direct text-white m-0"
+                role="group" aria-label="Opcode dump" tabindex="0">
+                <pre id="opcode-preamble" class="opc-preamble m-0"></pre>
+                <div id="opcode-ruler" class="opc-ruler" hidden></div>
+                <pre id="opcode-body" class="opc-body m-0">Ready!</pre>
+              </div>
             </div>
 
           </div>

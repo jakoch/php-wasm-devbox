@@ -315,3 +315,82 @@ textarea:focus-visible {
     font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
     font-size: 0.85em;
 }
+
+/* Widened result panel. The opcode listing is 89 columns (~641px monospace)
+   against ~568px in a half-width column, so it always overflows without this.
+   `display: none` on the editor cannot be transitioned and leaves Monaco at zero
+   width, so playground.js calls editor.layout() on restore. */
+#right {
+    transition: flex-basis 0.22s ease, width 0.22s ease;
+}
+
+#editor-container.widened #left {
+    display: none;
+}
+
+#editor-container.widened #right {
+    flex: 0 0 100%;
+    width: 100%;
+    animation: opc-widen-in 0.22s ease;
+}
+
+@keyframes opc-widen-in {
+    from {
+        opacity: 0.35;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Sticky ruler. The dump is fixed-width text, not a table, so there is no
+   <thead> to pin; the ruler line is its own element instead. It needs an opaque
+   background or listing rows show through as they scroll under it. */
+#opcode-output {
+    overflow: auto;
+    max-height: 60vh;
+    /* Required, not decorative: this container is a <div>, and its children only
+       inherit `white-space` from it. Without this the fixed-width columns
+       collapse and the listing is unreadable. */
+    white-space: pre;
+}
+
+#opcode-ruler {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    /* Opaque, and matched to the card, not to --bs-body-bg: this panel is dark
+       and the token would resolve to the wrong colour here. */
+    background: #212529;
+    font-family: inherit;
+    white-space: pre;
+    padding-bottom: 0.15rem;
+    border-bottom: 1px solid #495057;
+    margin-bottom: 0.15rem;
+    color: #dee2e6;
+}
+
+/* Diagnostic severity. Colour tracks the worst severity present, so one
+   deprecation no longer paints the badge the same red as a fatal. */
+#standard-error-output .sev-fatal {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+#standard-error-output .sev-warning {
+    color: #ffc75a;
+}
+
+#standard-error-output .sev-notice {
+    color: #8ecdf5;
+}
+
+#standard-error-output .sev-deprecated {
+    color: #9aa4b2;
+    font-style: italic;
+}
+
+#output-alert-banner {
+    font-size: 0.9em;
+}
