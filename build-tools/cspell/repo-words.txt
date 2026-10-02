@@ -27,6 +27,9 @@ vulcan
 # PHP internals
 EMBED
 EMSDK
+# Opcode family suffix: INIT_FCALL, DO_FCALL, INIT_DCALL, INIT_ICALL. cspell
+# splits on the underscore, so the suffix is the part that needs to be known.
+FCALL
 SAPI
 sapi
 zend
