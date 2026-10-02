@@ -110,7 +110,7 @@
 - [x] Provide two code execution modes:
   - [x] "Continuous" mode: Live code output preview as you type
   - [x] "Single run" mode: User must click "Run" to execute the code
-  - [ ] if the "Continous Checkbox" is on, hide the run button, else show run button (not needed)
+  - [ ] if the "Continuous Checkbox" is on, hide the run button, else show run button (not needed)
 - [x] Reset functionality:
   - [x] Clears the editor to a basic Hello World example
   - [ ] ask user for confirmation via dialog box?

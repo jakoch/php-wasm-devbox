@@ -1,26 +1,97 @@
+# Words specific to this repository, used by cspell via
+# build-tools/cspell/cspell.config.json.
+#
+# Keep the correct spelling only. Misspellings once lived here to silence the
+# linter, which taught cspell the wrong spelling instead of fixing the source.
+
+# People and organisations
 Bluchet
-ccall
+derickr
+Jens
+jakoch
+Rethans
+seanmorris
+
+# Products, projects and hosts
+Asyncify
 Datazilla
 devbox
-dont
-Emscripten
-jakoch
-Jens
+emscripten
+emsdk
 monokai
 phpinfo
 phpw
-Rethans
-statuscode
+Trixie
 vulcan
-Continous
-continous
-continously
-seperator
+
+# PHP internals
+EMBED
+EMSDK
+SAPI
+sapi
+zend
+zval
+zend_eval_string
+
+# Build and runtime identifiers
+ASYNCIFY
+CFLAGS
+CXXFLAGS
+HEAPU
+IDBFS
+IFFE
+LDFLAGS
+ONIG
+WORKDIR
+buildx
+libphp
+libsqlite
+libversion
 mbstring
-flexbox
+simplexml
+strtoupper
+syncfs
+
+# Platform and system calls
+debian
+getcontext
+getdtablesize
+linux
+makecontext
+malloc
+pcntl
+posix
+spawnp
+swapcontext
+
+# Identifiers that are not words
+ccall
+dont
 endswitch
 endwhile
+flexbox
 insteadof
-wakeup
-noopener
+intdiv
 linewise
+noopener
+statuscode
+superglobal
+superglobals
+wakeup
+
+# British spellings used throughout the bridge and its tests
+behaviour
+initialise
+initialised
+initialises
+initialising
+materialise
+parameterised
+recognises
+relinks
+recompiles
+uninitialised
+
+# Correct spellings that were previously misspelled in this file
+Continuous
+separator

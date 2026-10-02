@@ -45,7 +45,7 @@ $longestKey = strlen(array_reduce(
 
 // Format and display each key-value pair with proper alignment
 // 1. Pad the key with spaces until it reaches the longest key length
-// 2. concatenate the string using seperator " => "
+// 2. concatenate the string using separator " => "
 // 3. Pad the value with spaces from the left until it reaches 30 characters
 foreach ($array as $key => $value) {
     echo str_pad($key, $longestKey)  . " => "   . str_pad($value, 30, " ", STR_PAD_LEFT) . "\n";
