@@ -1430,6 +1430,19 @@ if (typeof document !== 'undefined') {
         setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
     }
 
+    /**
+     * The last version a run actually succeeded on.
+     *
+     * Not php.version: that is phpversion(), which comes back as "8.4.26-dev"
+     * for a development build and so does not match any option value. This is
+     * the dropdown's own vocabulary.
+     */
+    let lastGoodVersion = null;
+
+    const rememberGoodVersion = (version) => {
+        lastGoodVersion = version;
+    };
+
     function startAutoRun() {
         if (runInterval) clearInterval(runInterval);
         runInterval = setInterval(async () => {
@@ -1439,6 +1452,7 @@ if (typeof document !== 'undefined') {
             flashRunButton();
             try {
                 const result = await php.runPHP(editor.getContent(), uiElements.phpVersionDropdown);
+                rememberGoodVersion(uiElements.phpVersionDropdown);
                 handlePhpRunResult(result);
             } catch (err) {
                 handlePhpRunError(err);
@@ -1476,6 +1490,7 @@ if (typeof document !== 'undefined') {
                 return;
             }
             const result = await php.runPHP(editor.getContent(), phpVersion);
+            rememberGoodVersion(phpVersion);
             handlePhpRunResult(result);
         } catch (err) {
             handlePhpRunError(err);
@@ -1498,9 +1513,41 @@ if (typeof document !== 'undefined') {
 
     // php version switcher
     const phpVersionDropdown = document.getElementById("php-version-switcher");
+
+    /** Put the dropdown back on a version that can plausibly load. */
+    const restoreLastGoodVersion = (failedVersion) => {
+        // With nothing run yet there is no last-good version, so fall back to the
+        // first selectable option. Not options[0]: loadPhpVersions() puts a
+        // "Select a PHP version" placeholder with an empty value at the front.
+        // Better than leaving the control on a value that just failed -- the Run
+        // button and auto-run read the dropdown, not this handler, so a stuck
+        // selection poisons every later run.
+        const target = lastGoodVersion
+            ?? [...phpVersionDropdown.options].find((option) => option.value)?.value;
+        if (!target || target === failedVersion) return;
+
+        const option = phpVersionDropdown.querySelector(
+            `option[value="${CSS.escape(target)}"]`
+        );
+        if (option) phpVersionDropdown.value = option.value;
+    };
+
     phpVersionDropdown.addEventListener("change", async (event) => {
-        const result = await php.runPHP(editor.getContent(), event.target.value);
-        handlePhpRunResult(result);
+        const requestedVersion = event.target.value;
+        try {
+            const result = await php.runPHP(editor.getContent(), requestedVersion);
+            rememberGoodVersion(requestedVersion);
+            handlePhpRunResult(result);
+        } catch (err) {
+            // Without this the rejection escapes as an unhandled promise
+            // rejection, the Errors panel keeps claiming "No Errors!", and the
+            // dropdown stays on the version that failed to load. That last part
+            // is the expensive half: the Run button and auto-run both read the
+            // dropdown rather than this handler, so every later run fails the
+            // same way until the user notices and picks a version by hand.
+            handlePhpRunError(err);
+            restoreLastGoodVersion(requestedVersion);
+        }
     });
 
     // php example switcher
