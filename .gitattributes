@@ -1,7 +1,20 @@
 # Normalize line endings for all text files.
 * text=auto eol=lf
 
-# Use Git LFS to manage large binary .wasm files in this folder (no diffs or merges).
-# If LFS is not available, these files will be treated as binary and not diffed or merged.
-# The `binary` macro sets -text, which overrides the `* text=auto` rule above.
-playground/assets/wasm/*.wasm filter=lfs diff=lfs merge=lfs binary
+# Large binary .wasm modules in this folder: no diffs, no merges, no line-ending
+# munging. The `binary` macro sets -diff -merge -text, and -text overrides the
+# `* text=auto` rule above.
+#
+# Deliberately NOT routed through Git LFS. Every module published so far is
+# stored as a normal blob, and nothing in this repository consumes LFS: none of
+# the workflows pass `lfs: true` to actions/checkout, so a checkout yields the
+# 133-byte pointer instead of the module and the playground serves that text to
+# WebAssembly.instantiate(), which fails with
+#
+#   expected magic word 00 61 73 6d, found 76 65 72 73
+#
+# ("vers", the start of "version https://git-lfs.github.com/spec/v1"). The
+# previous comment here claimed that without LFS the files "will be treated as
+# binary", which is true of diffing but not of storage: a consumer without the
+# LFS smudge filter gets pointer text on disk, not the module.
+playground/assets/wasm/*.wasm binary
