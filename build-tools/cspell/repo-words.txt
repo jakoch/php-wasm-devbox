@@ -109,3 +109,7 @@ uninitialised
 # Correct spellings that were previously misspelled in this file
 Continuous
 separator
+
+headerless
+screenful
+relayout
