@@ -31,13 +31,28 @@ const stderr = [];
 // playground collects PHP output, so the suite asserts on the same path rather
 // than on a bridge-specific buffer.
 let stdout = '';
+/*
+ * Emscripten captures the printErr callback passed to createPhpModule() and
+ * never consults Module.printErr again, so reassigning it after construction
+ * captures nothing. Routing through a mutable sink is the only way to borrow the
+ * stream for one dump. Keep `sink` separate from `stderr`: sharing one variable
+ * makes a broken capture look like a working one.
+ */
+let sink = null;
 const createPhpModule = (await import(pathToFileURL(resolve(modulePath)))).default;
 
 const mod = await createPhpModule({
   print: (data) => {
     stdout += data;
   },
-  printErr: (...args) => stderr.push(args.join(' ')),
+  printErr: (...args) => {
+    const text = args.join(' ');
+    if (sink) {
+      sink(text);
+      return;
+    }
+    stderr.push(text);
+  },
   onAbort: (reason) => {
     throw new Error(`WASM aborted: ${reason}`);
   },
@@ -326,13 +341,133 @@ console.log('\n# 15. returned memory is owned by the caller');
   check('the module still works after phpw_free()', exec('1+1'), '2');
 }
 
-console.log('\n# 16. teardown and re-init');
-ccall('phpw_destroy', null, [], []);
-// phpw_exec() re-initialises lazily, so it must keep working rather than crash.
-check('phpw_exec() after destroy re-initialises', exec('1+1'), '2');
-check('re-init succeeds', ccall('phpw_init', 'number', [], []), 0);
-check('execution works after re-init', exec('1+1'), '2');
-check('superglobals work after re-init', (request('GET', 'z=9', '', ''), exec('$_GET["z"] ?? "MISSING"')), '9');
+console.log('\n# 16. opcode dumping via VLD (optional extension)');
+// Everything here is skipped when the module was built without VLD, so the suite
+// still passes on such a build. What it cannot skip is the *shape*: if VLD is
+// present, the dump must come back and must not execute the snippet.
+{
+  // Configure VLD without letting the bridge decide for us, so a missing
+  // extension is distinguishable from a refusal.
+  const hasVld = exec("extension_loaded('vld') ? 'yes' : 'no'") === 'yes';
+
+  if (!hasVld) {
+    console.log('  skip built without VLD (ENABLE_VLD=0)');
+    console.log('\n# 17. teardown and re-init');
+    ccall('phpw_destroy', null, [], []);
+    // phpw_exec() re-initialises lazily, so it must keep working rather than crash.
+    check('phpw_exec() after destroy re-initialises', exec('1+1'), '2');
+    check('re-init succeeds', ccall('phpw_init', 'number', [], []), 0);
+    check('execution works after re-init', exec('1+1'), '2');
+    check(
+      'superglobals work after re-init',
+      (request('GET', 'z=9', '', ''), exec('$_GET["z"] ?? "MISSING"')),
+      '9'
+    );
+  } else {
+    const VLD_DIR = '/vld';
+    const SNIPPET = `${VLD_DIR}/snip.php`;
+
+    /**
+     * Compile a snippet with dumping on and the executor disabled, and collect
+     * everything VLD writes to stderr. This mirrors PHP.getOpcodes() in
+     * assets/js/playground.js, including borrowing the printErr stream, because
+     * that is the only path by which the dump can reach the playground.
+     *
+     * vld.dump_paths is left off: its branch analysis is written to stdout, not
+     * stderr, so turning it on would leak fragments into the script output the
+     * "nothing leaked to stdout" check asserts on.
+     */
+    function dumpOpcodes(code, verbosity = 1) {
+      const status = ccall(
+        'phpw_vld_config',
+        'number',
+        ['number', 'number', 'number', 'number'],
+        [1, 0, verbosity, 0]
+      );
+      if (status !== 0) {
+        return { error: lastError() };
+      }
+
+      const lines = [];
+      sink = (data) => lines.push(`${data}\n`);
+      let rc = 0;
+      try {
+        try {
+          FS.mkdir(VLD_DIR);
+        } catch (e) {
+          /* EEXIST */
+        }
+        FS.writeFile(SNIPPET, code);
+        rc = ccall('phpw', null, ['string'], [SNIPPET]);
+      } finally {
+        sink = null;
+        ccall(
+          'phpw_vld_config',
+          'number',
+          ['number', 'number', 'number', 'number'],
+          [0, 1, 1, 0]
+        );
+        try {
+          FS.unlink(SNIPPET);
+        } catch (e) {
+          /* already gone */
+        }
+      }
+      return { text: lines.join(''), error: rc === 0 ? null : lastError() };
+    }
+
+    check('phpw_vld_config() accepts verbosity 0', ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 0, 0]), 0);
+    check('phpw_vld_config() accepts verbosity 3', ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 3, 0]), 0);
+    check('phpw_vld_config() rejects verbosity 4', ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 4, 0]), 1);
+    ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 0]);
+
+    // The snippet calls a function so the dump contains a call opcode as well as
+    // the ECHO: '<?php echo 1;' compiles to ECHO and RETURN only, and would never
+    // emit INIT_FCALL for the check below to find.
+    const dump = dumpOpcodes('<?php function twice($n) { return $n + $n; } echo twice(1);');
+    check('a dump is produced', dump.error, null);
+    check('the dump names the script', /filename:\s*\/vld\/snip\.php/.test(dump.text || ''), true);
+    check('the dump contains opcodes', /INIT_FCALL/.test(dump.text || ''), true);
+    check('the dump contains ECHO', /\bECHO\b/.test(dump.text || ''), true);
+
+    // The whole point of vld.execute=0: the snippet must not run. If it did, the
+    // marker would land on stdout and the dump would not be a pure disassembly.
+    stdout = '';
+    const sideEffect = dumpOpcodes('<?php file_put_contents("/tmp/phpw-vld-ran", "yes");');
+    check('a snippet with side effects compiles cleanly', sideEffect.error, null);
+    check('the snippet did not execute', FS.analyzePath('/tmp/phpw-vld-ran').exists, false);
+    check('nothing leaked to stdout', stdout, '');
+
+    // vld.active=0 must leave ordinary runs alone, or the Errors panel fills up.
+    // phpw_run(), not phpw_exec(): the latter drops echo() output in this bridge,
+    // which would make this pass or fail for reasons that have nothing to do
+    // with VLD. The newline keeps Emscripten's line-buffered Node TTY happy.
+    stdout = '';
+    ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 0]);
+    run("echo 'quiet', PHP_EOL;");
+    check('a normal run is not dumped', stdout.trim(), 'quiet');
+
+    // Repeated dumps must not accumulate state in the module.
+    let repeatsOk = true;
+    for (let i = 0; i < 50; i++) {
+      if (dumpOpcodes(`<?php $i + $i;`).error !== null) repeatsOk = false;
+    }
+    check('50 consecutive dumps all succeed', repeatsOk, true);
+    check('the module still executes after 50 dumps', exec('1+1'), '2');
+
+    console.log('\n# 17. teardown and re-init');
+    ccall('phpw_destroy', null, [], []);
+    // phpw_exec() re-initialises lazily, so it must keep working rather than crash.
+    check('phpw_exec() after destroy re-initialises', exec('1+1'), '2');
+    check('re-init succeeds', ccall('phpw_init', 'number', [], []), 0);
+    check('execution works after re-init', exec('1+1'), '2');
+    check(
+      'superglobals work after re-init',
+      (request('GET', 'z=9', '', ''), exec('$_GET["z"] ?? "MISSING"')),
+      '9'
+    );
+  }
+}
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'}: ${checks - failures}/${checks} checks passed`);
 if (failed.length) {

@@ -14,6 +14,14 @@
 
 import { Timer } from './timer.js';
 
+/*
+ * Where the opcode dump stages the snippet. VLD names the dump after the file it
+ * compiled, so a fixed path keeps the output predictable. Kept out of /tmp so it
+ * cannot collide with VLD's own save_dir, should that ever be turned on.
+ */
+const VLD_DIR = '/vld';
+const SNIPPET_PATH = `${VLD_DIR}/snip.php`;
+
 /**
  * The class PHP is used to manage the PHP WASM module and its interactions.
  *
@@ -33,6 +41,14 @@ class PHP {
     #buffer_stderr = [];
     #runPhp = null;
     #version = '';
+    // The resolved WASM module namespace. Held for ccall and for FS, which the
+    // opcode dump uses to stage a snippet before compiling it.
+    #module = null;
+    // When set, receives stderr instead of #buffer_stderr. Emscripten captures
+    // the printErr callback passed to createPhpModule() and never looks it up
+    // again, so reassigning module.printErr has no effect; the capture has to be
+    // a mutable destination behind the one callback installed at construction.
+    #stderrSink = null;
 
     // Static method to get the base path for WASM modules
     // This needs to handle gh-pages and local development paths correctly
@@ -70,22 +86,34 @@ class PHP {
         const wasmBinary = await this.#loadWasmBinary(php_version);
 
         // set options for the PHP WASM module
+        // Emscripten calls print/printErr once per line with the newline already
+        // stripped, so joining with '\n' reassembles the original text. Only a
+        // genuinely absent chunk should be skipped: an empty string is a blank
+        // line, which is real output the user asked for.
         const phpModuleOptions = {
             wasmBinary,
             print: (data) => {
-                if (!data) return;
+                if (data === undefined || data === null) return;
                 if (this.#buffer_stdout.length) this.#buffer_stdout.push('\n');
                 this.#buffer_stdout.push(data);
             },
             printErr: (data) => {
-                if (!data) return;
+                if (data === undefined || data === null) return;
+                // getOpcodes() borrows this stream; see #stderrSink.
+                if (this.#stderrSink) {
+                    this.#stderrSink(data);
+                    return;
+                }
                 if (this.#buffer_stderr.length) this.#buffer_stderr.push('\n');
                 this.#buffer_stderr.push(data);
             }
         };
 
         // initialize the PHP WASM module
-        const { ccall } = await createPhpModule(phpModuleOptions);
+        // Keep the whole namespace, not just ccall: the opcode dump needs FS to
+        // stage the snippet in the in-memory filesystem before phpw() compiles it.
+        this.#module = await createPhpModule(phpModuleOptions);
+        const { ccall } = this.#module;
 
         // get the PHP version
         this.#version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
@@ -121,6 +149,83 @@ class PHP {
         } catch (error) {
             throw new Error(`PHP execution failed: ${error.message}`);
         }
+    }
+
+    /**
+     * Compile PHP code and return VLD's opcode dump, without executing it.
+     *
+     * VLD writes the whole dump to C stderr, which Emscripten surfaces through
+     * printErr, so no separate return channel is needed. Two INI directives make
+     * that stream safe to capture: vld.active=1 installs the compiler hooks on
+     * request init, and vld.execute=0 replaces the executor with a no-op. The
+     * snippet is therefore compiled and dumped but never runs, so nothing the
+     * user's code would print can land in the dump.
+     *
+     * The snippet is staged as a real file rather than eval'd, so the line numbers
+     * in the dump match the editor exactly.
+     *
+     * @param {string} code       PHP source, opening tag included
+     * @param {number} verbosity  VLD verbosity, 0-3
+     * @returns {string}          The opcode dump
+     * @throws {Error}            If VLD is unavailable, or the code does not compile
+     */
+    getOpcodes(code, verbosity = 1) {
+        const module = this.#module;
+        if (!module || typeof module.ccall !== 'function') {
+            throw new Error('The PHP module is not loaded yet.');
+        }
+
+        const { ccall, FS } = module;
+
+        /*
+         * vld.dump_paths is left off deliberately. It is on by default in VLD and
+         * its branch analysis does not go to stderr: it arrives on stdout, so
+         * enabling it would splice fragments into the script output shown next to
+         * the dump. The opcode listing itself is unaffected.
+         */
+        const ok = ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [1, 0, verbosity, 0]);
+        if (ok !== 0) {
+            // Almost always a module built without VLD. Say so rather than
+            // returning an empty dump that looks like a silent failure.
+            throw new Error(
+                ccall('phpw_last_error', 'string', [], []) || 'Could not enable opcode dumping.'
+            );
+        }
+
+        // Emscripten hands printErr one line at a time, newline already stripped,
+        // so a separator on every call is what reassembles the original text.
+        // Do NOT skip empty strings: VLD separates op_array blocks with blank
+        // lines, and dropping them mangles the dump.
+        const lines = [];
+        this.#stderrSink = (text) => lines.push(`${text}\n`);
+
+        let status = 0;
+        try {
+            try {
+                FS.mkdir(VLD_DIR);
+            } catch (e) {
+                // EEXIST: the directory outlives individual runs by design.
+            }
+            FS.writeFile(SNIPPET_PATH, code);
+            status = ccall('phpw', null, ['string'], [SNIPPET_PATH]);
+        } finally {
+            this.#stderrSink = null;
+            // Leave VLD inert so ordinary runs stay unaffected.
+            ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 0]);
+            try {
+                FS.unlink(SNIPPET_PATH);
+            } catch (e) {
+                // Already gone; nothing to clean up.
+            }
+        }
+
+        if (status !== 0) {
+            // A parse error reached stderr during the compile and is now inside
+            // the captured text. Surface it as an error instead of as opcodes.
+            throw new Error(ccall('phpw_last_error', 'string', [], []) || 'The code could not be compiled.');
+        }
+
+        return lines.join('');
     }
 
     get stdout() {

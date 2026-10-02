@@ -65,15 +65,19 @@ class PHP {
         const wasmBinary = await this.#loadWasmBinary(php_version);
 
         // set options for the PHP WASM module
+        // Emscripten calls print/printErr once per line with the newline already
+        // stripped, so joining with '\n' reassembles the original text. Only a
+        // genuinely absent chunk should be skipped: an empty string is a blank
+        // line, which is real output the user asked for.
         const phpModuleOptions = {
             wasmBinary,
             print: (data) => {
-                if (!data) return;
+                if (data === undefined || data === null) return;
                 if (this.#buffer_stdout.length) this.#buffer_stdout.push('\n');
                 this.#buffer_stdout.push(data);
             },
             printErr: (data) => {
-                if (!data) return;
+                if (data === undefined || data === null) return;
                 if (this.#buffer_stderr.length) this.#buffer_stderr.push('\n');
                 this.#buffer_stderr.push(data);
             }

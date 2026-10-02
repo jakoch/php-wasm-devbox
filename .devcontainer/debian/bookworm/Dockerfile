@@ -21,8 +21,11 @@ ARG SQLITE_VERSION=3530400
 ARG SQLITE_SHA256=0e9483900e92cd5de8fd48d16bf9200145a61f7fd5be542a5ac81d8a9516eb9c
 ARG NODE_VERSION=24.21.0
 ARG NODE_SHA256=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
-# VLD is a debug-only extension; it must not end up in the shipped artifact.
-ARG ENABLE_VLD=0
+# VLD (the Vulcan Logic Disassembler) ships in the playground module so the
+# Opcodes tab can dump compiled opcodes. It costs only a zend_extension
+# registration when idle: its compiler hooks are installed on request init
+# solely when vld.active=1, which defaults to off.
+ARG ENABLE_VLD=1
 # +-----------------------------+
 # | METADATA                    |
 # +-----------------------------+
@@ -89,10 +92,8 @@ RUN set -e; \
 	cd emsdk && \
 	./emsdk install "${EMSCRIPTEN_VERSION}" && \
 	./emsdk activate "${EMSCRIPTEN_VERSION}" && \
-    echo "Download PHP and prepare build system" && \
+    echo "Download PHP" && \
 	git clone https://github.com/php/php-src.git /local/src/php-src/ --branch "PHP-${PHP_VERSION}" --single-branch --depth 1 && \
-	cd /local/src/php-src/ && \
-	./buildconf --force && \
     echo "Create install directory" && \
     mkdir -p /local/install && \
     echo "Create build directory" && \
@@ -142,17 +143,54 @@ ENV ONIG_LIBS="-L/local/install" \
     SQLITE_LIBS="-L/local/install" \
     SQLITE_CFLAGS="-I/local/install/include"
 
+# buildconf bakes the list of bundled extensions into ./configure, so it has to
+# run *after* ext/vld is cloned. Running it first makes configure reject
+# --enable-vld as an unrecognised option, warn, and carry on -- producing a
+# perfectly good PHP with no VLD in it and nothing but that warning to show.
 RUN echo "Clone VLD extension" && \
-    git clone https://github.com/derickr/vld.git /local/src/php-src/ext/vld --branch $VLD_VERSION --single-branch --depth 1
+    git clone https://github.com/derickr/vld.git /local/src/php-src/ext/vld --branch $VLD_VERSION --single-branch --depth 1 && \
+    cd /local/src/php-src/ && \
+    ./buildconf --force && \
+    ./configure --help | grep -q -- '--enable-vld' && \
+    echo "configure knows about VLD"
+
+# ext/vld/config.m4 runs `${PHP_CONFIG} --version` and aborts configure unless it
+# reports >= 7.0.0. This is a --disable-cli cross build, so no php-config exists
+# to ask and the check fails on an empty string. PHP_CONFIG is referenced from
+# nowhere else in configure, so a stub keeps VLD itself unpatched.
+RUN printf '%s\n' \
+	'#!/bin/sh' \
+	'case "${1:-}" in' \
+	'	--version) echo "'"${PHP_VERSION}"'" ;;' \
+	'	*) exit 1 ;;' \
+	'esac' \
+	> /usr/local/bin/php-config-vld-stub && \
+	chmod +x /usr/local/bin/php-config-vld-stub && \
+	/usr/local/bin/php-config-vld-stub --version
 
 # https://www.php.net/manual/en/configure.about.php
+#
+# CFLAGS carries -D_GNU_SOURCE because ext/mbstring's libmbfl sources include
+# <string.h> before main/php_config.h gets a chance to define it, and musl only
+# declares memrchr() and mempcpy() under _GNU_SOURCE. Without it the mbstring
+# build fails on undeclared-function errors. autoconf's own CPPFLAGS is reset by
+# its compiler probe, so the define has to go in CFLAGS to survive.
+#
+# _GNU_SOURCE also makes autoconf's AC_CHECK_FUNCS find _FPU_SETCW, a glibc
+# x86 legacy symbol emscripten happens to export. Defining HAVE__FPU_SETCW
+# sends Zend/zend_float.h down a branch that includes <fpu_control.h>, which
+# emscripten does not ship, so every consumer of that header then fails to
+# compile. The answer is forced to "no", alongside ac_cv_func_reallocarray
+# above, because the header is genuinely not there.
 RUN set -e; \
     echo "Configure PHP" && \
     cd /local/src/php-src/ && \
+    export PHP_CONFIG=/usr/local/bin/php-config-vld-stub && \
     VLD_FLAG=""; \
     if [ "${ENABLE_VLD}" = "1" ]; then VLD_FLAG="--enable-vld"; fi && \
 	emconfigure ./configure \
     --host="$(emcc -dumpmachine)" \
+    CFLAGS='-O3 -g0 -D_GNU_SOURCE' \
     --enable-embed=static \
 	--disable-all \
 	--disable-cgi \
@@ -173,7 +211,8 @@ RUN set -e; \
     --with-sqlite3 \
     --without-pcre-jit \
     --without-pear \
-    ac_cv_func_reallocarray=yes && \
+    ac_cv_func_reallocarray=yes \
+    ac_cv_func__FPU_SETCW=no && \
     echo "Compile WASM bridge for PHP" && \
     mkdir -p /local/build/php-wasm-bridge && \
     emcc -O2 \
@@ -248,7 +287,7 @@ RUN set -e; \
     -g0 \
     -flto=full \
     -v \
- 	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_exec", "_phpw_run", "_phpw_init", "_phpw_destroy", "_phpw_request_init", "_phpw_last_error", "_phpw_free", "_phpw_php_version", "_chdir", "_setenv"]' \
+ 	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_exec", "_phpw_run", "_phpw_init", "_phpw_destroy", "_phpw_request_init", "_phpw_last_error", "_phpw_free", "_phpw_php_version", "_phpw_vld_config", "_chdir", "_setenv"]' \
  	-s EXPORTED_RUNTIME_METHODS='["ccall", "UTF8ToString", "lengthBytesUTF8", "FS", "HEAPU8"]' \
  	-s ENVIRONMENT=web,worker,node \
  	-s STACK_SIZE=8mb \
@@ -275,6 +314,6 @@ RUN set -e; \
 # The folder /php-wasm contains the compiled PHP-WASM module.
 #
 
-FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS deploy-stage
+FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS deploy-stage
 
 COPY --from=build-stage /php-wasm /php-wasm

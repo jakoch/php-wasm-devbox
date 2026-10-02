@@ -36,6 +36,7 @@
 #include "Zend/zend_exceptions.h"
 #include "Zend/zend_execute.h"
 #include "Zend/zend_globals_macros.h"
+#include "Zend/zend_ini.h"
 #include "Zend/zend_interfaces.h"
 #include "Zend/zend_string.h"
 #include "Zend/zend_types.h"
@@ -66,6 +67,8 @@
  *   phpw_last_error()   : string - message of the last failure
  *   phpw_free(ptr)               - release a string from this API
  *   phpw_php_version()  : string - the PHP version this module was built with
+ *   phpw_vld_config(active, execute, verbosity, dump_paths) : int
+ *                      - drive VLD opcode dumping (see the function's own docs)
  *
  * @see https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
  */
@@ -665,6 +668,143 @@ void EMSCRIPTEN_KEEPALIVE phpw_free(char *ptr)
 char *EMSCRIPTEN_KEEPALIVE phpw_php_version(void)
 {
 	return phpw_strdup(PHP_VERSION);
+}
+
+/**
+ * Render a small integer as a NUL-terminated string.
+ *
+ * vld.verbosity is an OnUpdateLong directive taking 0-3. Formatting it with a
+ * two-byte buffer, the way a boolean would be, turns a request for 3 into 1
+ * without reporting anything, so the conversion is spelled out instead.
+ *
+ * @param value    Integer to render
+ * @param buf      Destination buffer
+ * @param buf_len  Size of the destination buffer
+ */
+static void phpw_vld_int_str(int value, char *buf, size_t buf_len)
+{
+	snprintf(buf, buf_len, "%d", value);
+}
+
+/**
+ * Set one PHP_INI_SYSTEM directive from C.
+ *
+ * @param name   Directive name, e.g. "vld.active"
+ * @param value  New value
+ * @return PHPW_OK on success, PHPW_ERROR if the directive is unknown or refused
+ */
+static int phpw_vld_ini_set(const char *name, const char *value)
+{
+	zend_string *key;
+	zend_result result;
+
+	key = zend_string_init(name, strlen(name), 1);
+
+	if (key == NULL) {
+		return PHPW_ERROR;
+	}
+
+	result = zend_alter_ini_entry_chars(
+		key,
+		value,
+		strlen(value),
+		ZEND_INI_SYSTEM,
+		ZEND_INI_STAGE_ACTIVATE
+	);
+
+	zend_string_release(key);
+
+	return result == SUCCESS ? PHPW_OK : PHPW_ERROR;
+}
+
+/**
+ * Apply the four VLD directives that drive opcode dumping.
+ *
+ * @param active      Non-zero to install VLD's compiler hooks on request init
+ * @param execute     Zero to replace the executor with a no-op (compile only)
+ * @param verbosity   0-3; higher dumps more, see VLD's documentation
+ * @param dump_paths  Non-zero to emit branch analysis alongside the opcodes
+ * @return PHPW_OK on success, PHPW_ERROR if any directive is refused
+ */
+static int phpw_vld_apply(int active, int execute, int verbosity, int dump_paths)
+{
+	char verbosity_buf[12];
+
+	phpw_vld_int_str(verbosity, verbosity_buf, sizeof(verbosity_buf));
+
+	if (phpw_vld_ini_set("vld.active", active ? "1" : "0") != PHPW_OK
+		|| phpw_vld_ini_set("vld.execute", execute ? "1" : "0") != PHPW_OK
+		|| phpw_vld_ini_set("vld.verbosity", verbosity_buf) != PHPW_OK
+		|| phpw_vld_ini_set("vld.dump_paths", dump_paths ? "1" : "0") != PHPW_OK) {
+		/*
+		 * A single missing directive means this build has no VLD, or an
+		 * incompatible one. Say so, rather than letting the caller see an empty
+		 * dump and wonder why.
+		 */
+		phpw_set_error("could not set VLD INI directives; is the extension present?");
+
+		return PHPW_ERROR;
+	}
+
+	return PHPW_OK;
+}
+
+/**
+ * Set the VLD INI directives that drive opcode dumping.
+ *
+ * Every directive here is declared PHP_INI_SYSTEM by the extension, so ini_set()
+ * from userland is refused. C is not: zend_alter_ini_entry_ex() carries an
+ * explicit special case for stage ZEND_INI_STAGE_ACTIVATE with modify_type
+ * ZEND_INI_SYSTEM (Zend/zend_ini.c), which is the same pair
+ * php_ini_activate_per_dir_config() uses. That is what lets the playground turn
+ * dumping on and off between requests without restarting the module.
+ *
+ * The caller is expected to run a compile-only pass while dumping is active
+ * (vld.active=1, vld.execute=0). VLD installs a no-op zend_execute_ex in that
+ * combination, so the snippet is compiled and dumped but never executed, and its
+ * output cannot mix with the script's stdout/stderr.
+ *
+ * @param active      Non-zero to install VLD's compiler hooks on request init
+ * @param execute     Zero to replace the executor with a no-op (compile only)
+ * @param verbosity   0-3; higher dumps more, see VLD's documentation
+ * @param dump_paths  Non-zero to emit branch analysis alongside the opcodes
+ * @return PHPW_OK on success, PHPW_ERROR on failure
+ *
+ * @see https://github.com/derickr/vld
+ */
+int EMSCRIPTEN_KEEPALIVE phpw_vld_config(int active, int execute, int verbosity, int dump_paths)
+{
+	/*
+	 * The directives are looked up in EG(ini_directives), which php_embed_init()
+	 * populates. A call made before the module is up therefore finds nothing and
+	 * would return FAILURE for all four. phpw_init() is idempotent, so calling it
+	 * here closes that hole without side effects.
+	 */
+	if (phpw_init() != PHPW_OK) {
+		return PHPW_ERROR;
+	}
+
+	/*
+	 * php_embed_init() opens a request of its own and leaves it open, so on the
+	 * first call after startup there is already a live request here. Altering INI
+	 * is only unsafe while a request owns CG()/EG(), and no caller can be
+	 * mid-script: every entry point runs a whole request of its own and closes it
+	 * again. Close the leftover rather than refusing.
+	 *
+	 * Refusing instead is silently fatal. It made the first phpw_vld_config()
+	 * after startup do nothing at all, so the first dump came back empty with
+	 * PHPW_OK never returned to warn anyone -- and because it also left vld.execute
+	 * at 0, the next ordinary run had its executor replaced by VLD's no-op and
+	 * produced no output either.
+	 */
+	phpw_request_end();
+
+	if (verbosity < 0 || verbosity > 3) {
+		phpw_set_error("verbosity must be between 0 and 3");
+		return PHPW_ERROR;
+	}
+
+	return phpw_vld_apply(active, execute, verbosity, dump_paths);
 }
 
 int main(int argc, char **argv)
