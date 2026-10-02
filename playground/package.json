@@ -8,8 +8,8 @@
   "homepage": "https://github.com/jakoch/php-wasm-devbox",
   "main": "index.js",
   "scripts": {
-    "format:check": "pnpm exec biome format",
-    "format:write": "pnpm exec biome format --write",
+    "format:check": "biome check assets/js ../test",
+    "format:write": "biome check --write assets/js ../test",
     "pnpm:audit": "pnpm audit --audit-level=high",
     "pnpm:outdated": "pnpm outdated",
     "pnpm:clean_install": "pnpm install --frozen-lockfile",
@@ -19,7 +19,9 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "ci:test:e2e": "CI=1 DEBUG=pw:browser npm run test:e2e 2>/dev/null"
+    "ci:test:e2e": "CI=1 DEBUG=pw:browser npm run test:e2e 2>/dev/null",
+    "test:unit": "node ../test/opcodes.test.mjs",
+    "test": "npm run format:check && npm run test:unit"
   },
   "devDependencies": {
     "biome": "^0.3.3",

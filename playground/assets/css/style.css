@@ -235,3 +235,83 @@ textarea:focus-visible {
 #editor-statusbar button, #editor-statusbar span, #editor-statusbar {
     font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
 }
+
+/* ------------------------------------------------------------------ */
+/* Result tabs (Output / Errors / Opcodes)                             */
+/* ------------------------------------------------------------------ */
+
+/* Bootstrap's own tab styling assumes a light nav-tabs background; on the dark
+   card header the inactive tabs disappear without this. */
+#result-tabs .nav-link {
+    color: var(--bs-light);
+    background-color: transparent;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+}
+
+#result-tabs .nav-link:hover,
+#result-tabs .nav-link:focus-visible {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(255, 255, 255, 0.35);
+}
+
+#result-tabs .nav-link.active {
+    color: #fff;
+    background-color: transparent;
+    border-bottom-color: #ffbf47;
+}
+
+/* ------------------------------------------------------------------ */
+/* Opcode dump presentation                                            */
+/* ------------------------------------------------------------------ */
+
+#opcode-output {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.85em;
+    line-height: 1.35;
+    /* The dump is a fixed-width table; wrapping it destroys the columns. */
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+    background-color: #0b0b0b;
+}
+
+#opcode-output .opc-name {
+    color: #7fd1ff;
+    font-weight: 600;
+}
+
+#opcode-output .opc-jump {
+    color: #ff9f5a;
+}
+
+#opcode-output .opc-slot {
+    color: #b9e88a;
+}
+
+#opcode-output .opc-string {
+    color: #f7c873;
+}
+
+#opcode-output .opc-mark {
+    color: #ff6b6b;
+    font-weight: 700;
+}
+
+#opcode-output .opc-meta {
+    color: #9aa4b2;
+    font-style: italic;
+}
+
+/* The ruler and the per-op_array header block VLD emits before each listing. */
+#opcode-output .opc-rule {
+    color: #6c757d;
+}
+
+#opcode-status {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.85em;
+}

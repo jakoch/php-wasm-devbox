@@ -44,10 +44,12 @@ class PHP {
     // The resolved WASM module namespace. Held for ccall and for FS, which the
     // opcode dump uses to stage a snippet before compiling it.
     #module = null;
-    // When set, receives stderr instead of #buffer_stderr. Emscripten captures
-    // the printErr callback passed to createPhpModule() and never looks it up
-    // again, so reassigning module.printErr has no effect; the capture has to be
-    // a mutable destination behind the one callback installed at construction.
+    // When set, receives the corresponding stream instead of #buffer_stdout /
+    // #buffer_stderr. Emscripten captures the print/printErr callbacks passed to
+    // createPhpModule() and never looks them up again, so reassigning
+    // module.print later has no effect; the capture has to be a mutable
+    // destination behind the one callback installed at construction.
+    #stdoutSink = null;
     #stderrSink = null;
 
     // Static method to get the base path for WASM modules
@@ -94,6 +96,11 @@ class PHP {
             wasmBinary,
             print: (data) => {
                 if (data === undefined || data === null) return;
+                // getOpcodes() borrows this stream; see #stdoutSink.
+                if (this.#stdoutSink) {
+                    this.#stdoutSink(data);
+                    return;
+                }
                 if (this.#buffer_stdout.length) this.#buffer_stdout.push('\n');
                 this.#buffer_stdout.push(data);
             },
@@ -152,24 +159,46 @@ class PHP {
     }
 
     /**
+     * Make sure the module for a PHP version is instantiated.
+     *
+     * Loading a version can mean a several-megabyte download, so callers that
+     * only need the module's presence should await this instead of triggering a
+     * run. Returns the module namespace.
+     *
+     * @param {string} php_version  e.g. "8.5.11"
+     * @returns {Promise<object>}   The module namespace
+     */
+    async loadModule(php_version) {
+        await this.#loadWasmModule(php_version);
+
+        return this.#module;
+    }
+
+    /**
      * Compile PHP code and return VLD's opcode dump, without executing it.
      *
-     * VLD writes the whole dump to C stderr, which Emscripten surfaces through
-     * printErr, so no separate return channel is needed. Two INI directives make
-     * that stream safe to capture: vld.active=1 installs the compiler hooks on
-     * request init, and vld.execute=0 replaces the executor with a no-op. The
-     * snippet is therefore compiled and dumped but never runs, so nothing the
-     * user's code would print can land in the dump.
+     * VLD dumps over both C streams, which is the part that is easy to get wrong:
+     * the opcode table and its analysis commentary go to stderr via vld_printf(),
+     * but branchinfo.c writes the branch/path summary with bare printf(), i.e.
+     * stdout. Since the snippet never executes, nothing else can appear on either
+     * stream, so both are borrowed for the duration and appended to one buffer in
+     * arrival order. Borrow them both rather than setting vld.dump_paths=0: that
+     * would silence the stdout half but also cost the E/I/O branch markers and,
+     * with them, the reachability information in the #* column.
      *
+     * Two INI directives make the capture safe: vld.active=1 installs the compiler
+     * hooks on request init, and vld.execute=0 replaces the executor with a no-op.
      * The snippet is staged as a real file rather than eval'd, so the line numbers
      * in the dump match the editor exactly.
      *
      * @param {string} code       PHP source, opening tag included
-     * @param {number} verbosity  VLD verbosity, 0-3
+     * @param {number} verbosity  VLD verbosity, 0-3. 0 is the opcode listing alone;
+     *                            1 adds VLD's branch-analysis commentary, 2 and 3
+     *                            add its internal trace.
      * @returns {string}          The opcode dump
      * @throws {Error}            If VLD is unavailable, or the code does not compile
      */
-    getOpcodes(code, verbosity = 1) {
+    getOpcodes(code, verbosity = 0) {
         const module = this.#module;
         if (!module || typeof module.ccall !== 'function') {
             throw new Error('The PHP module is not loaded yet.');
@@ -177,13 +206,7 @@ class PHP {
 
         const { ccall, FS } = module;
 
-        /*
-         * vld.dump_paths is left off deliberately. It is on by default in VLD and
-         * its branch analysis does not go to stderr: it arrives on stdout, so
-         * enabling it would splice fragments into the script output shown next to
-         * the dump. The opcode listing itself is unaffected.
-         */
-        const ok = ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [1, 0, verbosity, 0]);
+        const ok = ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [1, 0, verbosity, 1]);
         if (ok !== 0) {
             // Almost always a module built without VLD. Say so rather than
             // returning an empty dump that looks like a silent failure.
@@ -192,12 +215,14 @@ class PHP {
             );
         }
 
-        // Emscripten hands printErr one line at a time, newline already stripped,
-        // so a separator on every call is what reassembles the original text.
-        // Do NOT skip empty strings: VLD separates op_array blocks with blank
-        // lines, and dropping them mangles the dump.
+        // Emscripten hands print/printErr one line at a time, newline already
+        // stripped, so a separator on every call is what reassembles the original
+        // text. Do NOT skip empty strings: VLD separates op_array blocks with
+        // blank lines, and dropping them mangles the dump.
         const lines = [];
-        this.#stderrSink = (text) => lines.push(`${text}\n`);
+        const collect = (text) => lines.push(`${text}\n`);
+        this.#stdoutSink = collect;
+        this.#stderrSink = collect;
 
         let status = 0;
         try {
@@ -209,9 +234,10 @@ class PHP {
             FS.writeFile(SNIPPET_PATH, code);
             status = ccall('phpw', null, ['string'], [SNIPPET_PATH]);
         } finally {
+            this.#stdoutSink = null;
             this.#stderrSink = null;
             // Leave VLD inert so ordinary runs stay unaffected.
-            ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 0]);
+            ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 1]);
             try {
                 FS.unlink(SNIPPET_PATH);
             } catch (e) {
@@ -246,6 +272,209 @@ class PHP {
         this.#runPhp = null;
         this.#version = '';
     }
+}
+
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
+/*
+ * Column offsets of a VLD listing row, measured against the dump that
+ * vld_dump_op() in srm_oparray.c produces (VLD 0.19.1) rather than counted by
+ * hand. Each row is emitted as:
+ *     "%5d "  source line        cols  0-5
+ *     "%5d"   opcode number      cols  6-10
+ *     "%c"    notdead  ' '|'*'   col   11
+ *     " %c"   entry    ' '|'E'   col   13
+ *     " %c"   start    ' '|'>'   col   15
+ *     " %c"   end      ' '|'>'   col   17
+ *     " %-32s ..."  opcode name from col 19
+ * VLD's own ruler header is off by one against this (it prints "#" at col 10),
+ * so the data columns are what the highlighting uses.
+ */
+const OPC_MARKER_NOTDEAD = 11;
+const OPC_MARKER_ENTRY = 13;
+const OPC_MARKER_START = 15;
+const OPC_MARKER_END = 17;
+const OPC_NAME_START = 19;
+
+/**
+ * Render one line of a VLD dump to HTML.
+ *
+ * The four marker columns are matched by position, not by pattern: `E` and `>`
+ * also occur inside operand text (`->2`, `'a>b'`) and a pattern would highlight
+ * the wrong things. The row shape is verified first, so a line that does not fit
+ * — a `branch:` summary, a future format change — falls through to generic
+ * highlighting instead of being sliced at arbitrary offsets.
+ *
+ * Note that VLD URL-encodes string operands (`php_url_encode()` in
+ * vld_dump_zval_string), so operand text cannot contain markup even before
+ * escaping. Everything is escaped regardless; that is defence in depth, not the
+ * primary defence.
+ *
+ * @param {string} line  A single dump line, unescaped
+ * @returns {string}     HTML, safe to assign to innerHTML
+ */
+function renderOpcodeLine(line) {
+    const at = (index) => line[index] ?? ' ';
+    const isListingRow = line.length > OPC_NAME_START + 1
+        && /^\s*\d/.test(line)
+        && /^\s*$/.test(line.slice(6, 10))
+        && /^[* ]$/.test(at(OPC_MARKER_NOTDEAD))
+        && /^[E ]$/.test(at(OPC_MARKER_ENTRY))
+        && /^[> ]$/.test(at(OPC_MARKER_START))
+        && /^[> ]$/.test(at(OPC_MARKER_END));
+
+    if (!isListingRow) {
+        return highlightOpcodeOperands(line);
+    }
+
+    const head = line.slice(0, OPC_MARKER_NOTDEAD);
+    const markers = line
+        .slice(OPC_MARKER_NOTDEAD, OPC_MARKER_END + 1)
+        // Escape the marker too: '>' is legal in HTML text but inconsistent to
+        // leave raw next to the escaped copies elsewhere on the line.
+        .replace(/([E*>])/g, (marker) => `<span class="opc-mark">${escapeHtml(marker)}</span>`);
+
+    const afterMarkers = line.slice(OPC_MARKER_END + 1);
+    const padding = afterMarkers.slice(0, OPC_NAME_START - (OPC_MARKER_END + 1));
+    const listing = afterMarkers.slice(OPC_NAME_START - (OPC_MARKER_END + 1));
+
+    return escapeHtml(head) + markers + escapeHtml(padding) + highlightOpcodeOperands(listing);
+}
+
+/**
+ * Colour the opcode name, jump targets, operand slots and strings.
+ *
+ * Runs over already-column-verified text; the opcode name is the first all-caps
+ * identifier at or after column 13, and everything else is matched by shape.
+ */
+function highlightOpcodeOperands(text) {
+    const pattern = /(->\d+)|([!$~]\d+)|('(?:[^'\\]|\\.)*')|(\b[A-Z][A-Z0-9_]{1,}\b)/g;
+    const classes = ['opc-jump', 'opc-slot', 'opc-string', 'opc-name'];
+    let html = '';
+    let last = 0;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+        html += escapeHtml(text.slice(last, match.index));
+        // Exactly one of the four groups participates in a given match, so the
+        // first defined group index identifies which.
+        const cls = classes[match.slice(1).findIndex((group) => group !== undefined)];
+        html += `<span class="${cls}">${escapeHtml(match[0])}</span>`;
+        last = match.index + match[0].length;
+    }
+
+    html += escapeHtml(text.slice(last));
+
+    return html;
+}
+
+/**
+ * Turn a whole dump into highlighted, size-capped HTML.
+ *
+ * A large dump is a real possibility (a few thousand opcodes is a few hundred KB
+ * of markup), so the line count is capped and the truncation is reported rather
+ * than silently applied.
+ *
+ * @param {string} dump        Raw dump text from PHP.getOpcodes()
+ * @param {number} maxLines    Cap on rendered lines
+ * @returns {{ html: string, shown: number, total: number, truncated: boolean }}
+ */
+function renderOpcodeDump(dump, maxLines = 4000) {
+    const allLines = String(dump).split('\n');
+    // A trailing newline yields one empty tail element; it is not a line.
+    if (allLines.length && allLines[allLines.length - 1] === '') allLines.pop();
+
+    const shown = allLines.slice(0, maxLines);
+
+    return {
+        html: shown
+            .map((line) => {
+                if (/^-{20,}$/.test(line)) return `<span class="opc-rule">${escapeHtml(line)}</span>`;
+                if (/^(filename|function name|number of ops|compiled vars):/.test(line)) {
+                    return `<span class="opc-meta">${escapeHtml(line)}</span>`;
+                }
+                return renderOpcodeLine(line);
+            })
+            .join('\n'),
+        shown: shown.length,
+        total: allLines.length,
+        truncated: allLines.length > shown.length,
+    };
+}
+
+/**
+ * Minimal ARIA tab controller for the result panels.
+ *
+ * Bootstrap's collapse and tab JS is not loaded by this page (only its CSS is),
+ * so data-bs-toggle cannot be relied on. Keyboard support follows
+ * the WAI-ARIA tabs pattern: arrows move and activate, Home/End jump.
+ */
+function setupResultTabs(root = document) {
+    const tabs = Array.from(root.querySelectorAll('[data-result-tab]'));
+
+    if (tabs.length === 0) return null;
+
+    const panels = new Map();
+    const toolbars = Array.from(root.querySelectorAll('[data-result-tab-toolbar]'));
+
+    function show(name, { focus = false } = {}) {
+        for (const tab of tabs) {
+            const active = tab.dataset.resultTab === name;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            // Roving tabindex: only the active tab is in the tab order.
+            tab.tabIndex = active ? 0 : -1;
+            if (active && focus) tab.focus();
+        }
+
+        // panels is a Map: Object.values() on one returns [], which would leave every
+        // panel visible and silently stack all three on top of each other.
+        for (const panel of panels.values()) panel.hidden = true;
+
+        const panel = panels.get(name);
+        if (panel) panel.hidden = false;
+
+        for (const toolbar of toolbars) {
+            toolbar.hidden = toolbar.dataset.resultTabToolbar !== name;
+        }
+    }
+
+    for (const tab of tabs) {
+        const panel = document.getElementById(tab.getAttribute('aria-controls'));
+        if (panel) panels.set(tab.dataset.resultTab, panel);
+
+        tab.addEventListener('click', (event) => {
+            event.preventDefault();
+            show(tab.dataset.resultTab);
+        });
+
+        tab.addEventListener('keydown', (event) => {
+            const current = tabs.indexOf(tab);
+            let next = null;
+
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                next = (current + 1) % tabs.length;
+            } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                next = (current - 1 + tabs.length) % tabs.length;
+            } else if (event.key === 'Home') {
+                next = 0;
+            } else if (event.key === 'End') {
+                next = tabs.length - 1;
+            }
+
+            if (next === null) return;
+            event.preventDefault();
+            show(tabs[next].dataset.resultTab, { focus: true });
+        });
+    }
+
+    show('output');
+
+    return { show, isActive: (name) => tabs.some((t) => t.dataset.resultTab === name && t.classList.contains('active')) };
 }
 
 /**
@@ -747,7 +976,10 @@ function setEditorErrorMarker(editorInstance, editorType, errorInfo) {
 }
 
 // Setup Playground Interactions
-document.addEventListener("DOMContentLoaded", async () => {
+// Guarded so this file can also be imported by a test harness under Node,
+// where there is no document to listen on.
+if (typeof document !== 'undefined') {
+    document.addEventListener("DOMContentLoaded", async () => {
     const php = new PHP();
     const editor = new CodeEditor();
 
@@ -774,6 +1006,138 @@ document.addEventListener("DOMContentLoaded", async () => {
         event.preventDefault();
         helpContainer.classList.add("d-none");
     });
+
+    /* Result tabs */
+
+    const resultTabs = setupResultTabs(document);
+
+    // Surface the Errors tab when a run produced diagnostics. The tab itself is
+    // never switched to automatically: auto-run would then yank the view away
+    // from whatever the user was reading on every tick.
+    const errorBadge = document.getElementById("error-badge");
+
+    function updateErrorBadge(count) {
+        if (!errorBadge) return;
+        errorBadge.textContent = String(count);
+        errorBadge.classList.toggle('d-none', count === 0);
+    }
+
+    /* Opcode dump */
+
+    const opcodeOutput = document.getElementById("opcode-output");
+    const opcodeStatus = document.getElementById("opcode-status");
+    const opcodeVerbosity = document.getElementById("opcode-verbosity");
+    const dumpOpcodesButton = document.getElementById("dump-opcodes-button");
+    const copyOpcodesButton = document.getElementById("copy-opcodes-button");
+    const saveOpcodesButton = document.getElementById("save-opcodes-button");
+
+    // The raw dump, kept so Copy and Save act on what was actually captured
+    // rather than on the highlighted markup.
+    let opcodeDumpText = '';
+    let opcodeDumping = false;
+
+    function setOpcodeStatus(text) {
+        if (opcodeStatus) opcodeStatus.textContent = text;
+    }
+
+    /**
+     * Count diagnostic lines for the Errors tab badge.
+     *
+     * Only lines that look like PHP diagnostics count; the placeholder text
+     * ("No Errors!") and blank lines do not.
+     */
+    function countDiagnosticLines(text) {
+        if (!text) return 0;
+        return String(text)
+            .split('\n')
+            .filter((line) => /^PHP (Warning|Notice|Fatal error|Deprecated|Parse error|Strict Standards)/i.test(line.trim())).length;
+    }
+
+    async function dumpOpcodes() {
+        if (opcodeDumping) return;
+
+        const version = uiElements.phpVersionDropdown;
+        if (!version) {
+            setOpcodeStatus('Select a PHP version first.');
+            return;
+        }
+
+        opcodeDumping = true;
+        if (dumpOpcodesButton) dumpOpcodesButton.disabled = true;
+        setOpcodeStatus('Compiling…');
+
+        try {
+            // Make sure the module for this version is resident; getOpcodes()
+            // needs ccall and FS, which only exist once it has been loaded.
+            await php.loadModule(version);
+
+            const verbosity = opcodeVerbosity ? parseInt(opcodeVerbosity.value, 10) || 0 : 0;
+            const dump = php.getOpcodes(editor.getContent(), verbosity);
+
+            opcodeDumpText = dump;
+            const rendered = renderOpcodeDump(dump);
+
+            if (opcodeOutput) opcodeOutput.innerHTML = rendered.html;
+
+            const bytes = new Blob([dump]).size;
+            setOpcodeStatus(
+                `PHP ${version} · ${rendered.shown} of ${rendered.total} lines · ${bytes} bytes`
+                + (rendered.truncated ? ' · truncated' : '')
+            );
+        } catch (error) {
+            opcodeDumpText = '';
+            if (opcodeOutput) {
+                opcodeOutput.textContent = error.message || String(error);
+            }
+            setOpcodeStatus('Dump failed.');
+        } finally {
+            opcodeDumping = false;
+            if (dumpOpcodesButton) dumpOpcodesButton.disabled = false;
+        }
+    }
+
+    if (dumpOpcodesButton) dumpOpcodesButton.addEventListener('click', dumpOpcodes);
+
+    if (copyOpcodesButton) {
+        copyOpcodesButton.addEventListener('click', async () => {
+            if (!opcodeDumpText) {
+                setOpcodeStatus('Nothing to copy yet — click Dump first.');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(opcodeDumpText);
+                setOpcodeStatus('Opcode dump copied to the clipboard.');
+            } catch (error) {
+                setOpcodeStatus('The clipboard is not available in this browser.');
+            }
+        });
+    }
+
+    if (saveOpcodesButton) {
+        saveOpcodesButton.addEventListener('click', () => {
+            if (!opcodeDumpText) {
+                setOpcodeStatus('Nothing to save yet — click Dump first.');
+                return;
+            }
+            const version = uiElements.phpVersionDropdown || 'unknown';
+            saveToFile(opcodeDumpText, `opcodes-${version}.txt`);
+            setOpcodeStatus('Opcode dump saved.');
+        });
+    }
+
+    // Expose a small, documented surface for the console and for the Playwright
+    // suite. Deliberately not a bare `window.__php`: naming it makes it a
+    // promise to keep, and it is what the tests drive.
+    window.phpPlayground = {
+        php,
+        editor,
+        getContent: () => editor.getContent(),
+        setContent: (value) => editor.setContent(value),
+        getOpcodes: (verbosity) => php.getOpcodes(editor.getContent(), verbosity ?? 0),
+        dumpOpcodes,
+        showTab: (name) => resultTabs && resultTabs.show(name),
+        version: () => uiElements.phpVersionDropdown,
+    };
 
     /* Editor */
 
@@ -830,6 +1194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
+        updateErrorBadge(countDiagnosticLines(result.output_error));
         // Highlight error in editor if present
         let errorInfo = parsePhpError(result.output_error);
         if (!errorInfo) errorInfo = parsePhpError(result.output);
@@ -838,6 +1203,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function handlePhpRunError(err) {
         uiElements.output_error = err.message;
+        updateErrorBadge(countDiagnosticLines(err.message));
         setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
     }
 
@@ -947,6 +1313,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Clear output and error markers
             try {
                 uiElements.output = '';
+                updateErrorBadge(0);
+                opcodeDumpText = '';
+                if (opcodeOutput) opcodeOutput.textContent = 'Ready!';
+                setOpcodeStatus('Compile the editor contents to see the opcodes.');
+                if (resultTabs) resultTabs.show('output');
                 uiElements.output_error = '';
                 uiElements.phpVersionDisplay = '';
                 uiElements.perfDataDisplay = '';
@@ -1027,3 +1398,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	}
     });
 });
+}
+
+/* Exported so a Node test harness can import them; unused by the page itself. */
+export { escapeHtml, renderOpcodeLine, renderOpcodeDump, setupResultTabs, parsePhpError };
