@@ -30,6 +30,14 @@ EMSDK
 # Opcode family suffix: INIT_FCALL, DO_FCALL, INIT_DCALL, INIT_ICALL. cspell
 # splits on the underscore, so the suffix is the part that needs to be known.
 FCALL
+JMPZ
+# VLD source files named in comments. They have no internal separator for
+# cspell to split on, so each is one unknown token.
+branchinfo
+oparray
+# VLD's own name for the reachability column in its listing header, where a
+# '*' means the opcode is not dead code.
+notdead
 SAPI
 sapi
 zend
@@ -84,6 +92,8 @@ wakeup
 
 # British spellings used throughout the bridge and its tests
 behaviour
+colour
+defence
 initialise
 initialised
 initialises
