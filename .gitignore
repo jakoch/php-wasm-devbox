@@ -8,3 +8,7 @@ playground/node_modules/
 playground/assets/wasm/php-versions.json
 playground/version.json
 
+
+# Working documents, kept locally but not part of the repository
+playground/todo.md
+todo-vld.md
