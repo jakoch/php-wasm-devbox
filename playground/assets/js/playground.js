@@ -1531,10 +1531,18 @@ if (typeof document !== 'undefined') {
     // editor switcher
     const editorDropdown = document.getElementById("editor-switcher");
     editorDropdown.addEventListener("change", async (event) => {
+        const requestedEditor = event.target.value;
         editorSwitching = true;
         setRunButtonDisabled(true);
         try {
-            await editor.switchEditor(event.target.value);
+            await editor.switchEditor(requestedEditor);
+        } catch (err) {
+            // switchEditor() rethrows and only assigns #currentEditor once the
+            // new backend is up, so this handler's try/finally let the rejection
+            // escape unhandled and left the dropdown on an editor that never
+            // loaded. #currentEditor still names the one that works.
+            handlePhpRunError(err);
+            editorDropdown.value = editor.currentEditor;
         } finally {
             editorSwitching = false;
             setRunButtonDisabled(false);
@@ -1584,23 +1592,34 @@ if (typeof document !== 'undefined') {
     const phpExampleDropdown = document.getElementById("php-example-switcher");
     phpExampleDropdown.addEventListener("change", async (event) => {
         const example = event.target.value;
-        // automatically switch the output mode to HTML, if the example is phpinfo()
-        if(example === "phpinfo") {
-            uiElements.outputModeHtml = true;
-        } else {
-            uiElements.outputModeHtml = false;
-        }
-        let content = '';
         const isGithubPages = location.hostname.endsWith('github.io');
-        if (isGithubPages) {
-            // on GitHub Pages there is no PHP backend, so we load the php files as text files
-            const response = await fetch(`examples/${example}.php`);
+        // on GitHub Pages there is no PHP backend, so we load the php files as
+        // text files; elsewhere they come from the PHP backend.
+        const url = isGithubPages
+            ? `examples/${example}.php`
+            : `examples/_get_file.php?file=${example}`;
+
+        let content;
+        try {
+            const response = await fetch(url);
+            // Checked before reading the body, not after. Without this an error
+            // status hands back the server's own error page -- HTML on GitHub
+            // Pages -- and that gets written straight over the user's code.
+            if (!response.ok) {
+                throw new Error(`Could not load the example "${example}" (HTTP ${response.status}).`);
+            }
             content = await response.text();
-        } else {
-            // we have a PHP backend available
-            const response = await fetch(`examples/_get_file.php?file=${example}`);
-            content = await response.text();
+        } catch (err) {
+            // The editor is deliberately left untouched: the load failed, so
+            // there is nothing to put in it, and overwriting it would throw away
+            // whatever the user had.
+            handlePhpRunError(err);
+            phpExampleDropdown.value = '';
+            return;
         }
+
+        // automatically switch the output mode to HTML, if the example is phpinfo()
+        uiElements.outputModeHtml = example === "phpinfo";
         editor.setContent(content);
         setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
     });
