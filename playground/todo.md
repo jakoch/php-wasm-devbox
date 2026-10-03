@@ -147,10 +147,47 @@ Parse error: syntax error, unexpected token "{", expecting variable in /run/scri
 ```
 
 So syntax errors are now shown for the first time, but they land in the **Output** panel
-while the Errors panel says "No Errors!". Moving them across needs either a bridge-side
-`ub_write`/error-output split or a heuristic in `runPHP` (on a failed run, treat captured
-stdout as the error). Not done here — out of scope for this item, and it needs a
-decision about which stream PHP's own errors belong on.
+while the Errors panel says "No Errors!". Not done here — out of scope for this item.
+
+**The gap is much wider than parse errors.** Measured per error kind against the built
+module, every PHP diagnostic goes to stdout and **stderr is always empty**:
+
+```
+kind                  rc  stdout                          stderr
+parse error           1  "Parse error: syntax error..."    ""
+warning               0  "Warning: Undefined variable..."  ""
+uncaught exception    1  "Fatal error: Uncaught Runtime..." ""
+fatal (method on null)1  "Fatal error: Uncaught Error..."   ""
+TypeError             1  "Fatal error: Uncaught TypeError" ""
+```
+
+So the **Errors panel is structurally dead** for anything PHP itself reports — a warning
+or a fatal error shows under Output and the Errors panel claims "No Errors!". Only
+`error_log()` (which routes through the SAPI logger rather than the output layer) and
+VLD's dump, which the Opcodes tab diverts, ever reach it. This predates WP-01.8: the old
+`phpw_run()` path put the same text on stdout.
+
+**Why, and why the obvious fix does not work.** `sapi/embed/php_embed.c` does register
+`php_embed_log_message`, which writes to `stderr` — but nothing calls it, because
+`log_errors` defaults to **`0`** (`main/main.c:749`). The tempting knob,
+`display_errors=stderr`, is no help either: PHP only honours it when the SAPI is `cli`,
+`cgi` or `phpdbg` (`main/main.c:1410-1413`), and this is the **embed** SAPI, so it falls
+through to stdout regardless.
+
+Two ways forward, both a behaviour change to what users see, so neither is taken here:
+
+- **`log_errors=1` with `display_errors=0`**, set once in C after `php_embed_init()`.
+  Diagnostics then go to stderr only, which is exactly the split the panels assume. Needs
+  no new bridge export; the INI entries are `PHP_INI_ALL`.
+- **A generic exported `phpw_ini_set(name, value)`**, which is more broadly useful but adds
+  public API surface.
+
+Rejected: a JS heuristic that treats stdout as the error on a failed run. Warnings come
+back with `rc=0` alongside genuine program output, so there is nothing reliable to split on.
+
+Also noted while measuring: output that is not newline-terminated is never delivered to
+JS, and output emitted during request shutdown can land in the *next* request's buffer.
+Both are pre-existing flush-timing artefacts, unrelated to this item.
 
 ### WP-01.9 Version-switch handler has no error path
 
