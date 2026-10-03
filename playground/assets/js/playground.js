@@ -20,7 +20,7 @@ import { Timer } from './timer.js';
  * cannot collide with VLD's own save_dir, should that ever be turned on.
  */
 const VLD_DIR = '/vld';
-const SNIPPET_PATH = `${VLD_DIR}/snip.php`;
+const SNIPPET_PATH = `${VLD_DIR}/code.php`;
 
 // Where a normal Run stages the editor contents. A real file, executed through
 // phpw(), so the engine parses it exactly as it would any script on disk.

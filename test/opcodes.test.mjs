@@ -108,7 +108,7 @@ console.log('\n# 2. opcode rendering');
 console.log('\n# 3. dump rendering');
 {
   const dump = [
-    'filename:       /vld/snip.php',
+    'filename:       /vld/code.php',
     'number of ops:  2',
     'line      #* E I O op                               fetch          ext  return  operands',
     '-----------------------------------------------------------------------------------------',
@@ -340,13 +340,13 @@ console.log('\n# 6. getOpcodes against a real module');
     let status = 0;
     try {
       try { mod.FS.mkdir('/vld'); } catch (e) { /* EEXIST */ }
-      mod.FS.writeFile('/vld/snip.php', code);
-      status = c('phpw', null, ['string'], ['/vld/snip.php']);
+      mod.FS.writeFile('/vld/code.php', code);
+      status = c('phpw', null, ['string'], ['/vld/code.php']);
     } finally {
       stdoutSink = null;
       stderrSink = null;
       c('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 1]);
-      try { mod.FS.unlink('/vld/snip.php'); } catch (e) { /* gone */ }
+      try { mod.FS.unlink('/vld/code.php'); } catch (e) { /* gone */ }
     }
 
     if (status !== 0) throw new Error(c('phpw_last_error', 'string', [], []) || 'compile failed');
@@ -355,7 +355,7 @@ console.log('\n# 6. getOpcodes against a real module');
 
   const dump = getOpcodes('<?php function t($x){ return $x * 2; } echo t(3);');
   assert('dump is produced', dump.length > 0);
-  assert('dump names the staged file', dump.includes('/vld/snip.php'));
+  assert('dump names the staged file', dump.includes('/vld/code.php'));
   assert('dump contains opcodes', /\bECHO\b/.test(dump) && /\bINIT_FCALL\b/.test(dump));
   assert('branch summary captured from stdout', /branch: #/.test(dump));
 

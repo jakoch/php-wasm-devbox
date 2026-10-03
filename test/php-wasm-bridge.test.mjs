@@ -365,7 +365,7 @@ console.log('\n# 16. opcode dumping via VLD (optional extension)');
     );
   } else {
     const VLD_DIR = '/vld';
-    const SNIPPET = `${VLD_DIR}/snip.php`;
+    const SNIPPET = `${VLD_DIR}/code.php`;
 
     /**
      * Compile a snippet with dumping on and the executor disabled, and collect
@@ -426,7 +426,7 @@ console.log('\n# 16. opcode dumping via VLD (optional extension)');
     // emit INIT_FCALL for the check below to find.
     const dump = dumpOpcodes('<?php function twice($n) { return $n + $n; } echo twice(1);');
     check('a dump is produced', dump.error, null);
-    check('the dump names the script', /filename:\s*\/vld\/snip\.php/.test(dump.text || ''), true);
+    check('the dump names the script', /filename:\s*\/vld\/code\.php/.test(dump.text || ''), true);
     check('the dump contains opcodes', /INIT_FCALL/.test(dump.text || ''), true);
     check('the dump contains ECHO', /\bECHO\b/.test(dump.text || ''), true);
 
