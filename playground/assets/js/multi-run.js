@@ -450,6 +450,9 @@ class VersionPanel {
     #versionDisplay;
     #perfDisplay;
     #outputModeCheckbox;
+    // Last version a run succeeded on, so a failed switch can be undone. Per
+    // panel: each owns its own PHP runtime and its own select.
+    #lastGoodVersion = null;
 
     constructor(id, availableVersions) {
         this.#id = id;
@@ -528,6 +531,7 @@ class VersionPanel {
         if (availableVersions.length > 0) {
             this.#versionSelect.value = availableVersions[0];
             this.#versionDisplay.textContent = availableVersions[0];
+            this.#lastGoodVersion = availableVersions[0];
         }
 
         // Add event listeners
@@ -561,9 +565,17 @@ class VersionPanel {
 
         try {
             const result = await this.#php.runPHP(code, version);
+            this.#lastGoodVersion = version;
             this.#handleResult(result);
         } catch (err) {
             if (this.#errorElement) this.#errorElement.textContent = err.message;
+            // Put the select back on a version that works. runCode() reads
+            // #versionSelect.value, so a failed switch left selected poisons
+            // every later run in this panel until the user picks again by hand.
+            if (this.#lastGoodVersion && this.#lastGoodVersion !== version) {
+                this.#versionSelect.value = this.#lastGoodVersion;
+                this.#versionDisplay.textContent = this.#lastGoodVersion;
+            }
         } finally {
             this.#runButton.disabled = false;
             this.#runButton.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i> <span class="ps-1">Run</span>';
