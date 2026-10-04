@@ -30,11 +30,8 @@ class PHP {
     #version = '';
 
     // Static method to get the base path for WASM modules
-    // This needs to handle gh-pages and local development paths correctly
-    static getBasePath = () => {
-        const match = location.pathname.match(/^\/(php-wasm-devbox)(\/|$)/);
-        return match ? `/${match[1]}` : '';
-    };
+    // Duplicated from playground.js (WP-02), which has the documented version.
+    static getBasePath = () => basePathFor(location.pathname);
 
     // Base path for WASM modules, set once during class initialization
     #basePath = PHP.getBasePath();
@@ -97,14 +94,14 @@ class PHP {
         this.#runPhp = async (code) => {
             try {
                 FS.mkdir('/run');
-            } catch (e) {
+            } catch {
                 // EEXIST
             }
             FS.writeFile('/run/script.php', code);
             const status = ccall("phpw", null, ["string"], ['/run/script.php']);
             try {
                 FS.unlink('/run/script.php');
-            } catch (e) {
+            } catch {
                 // Already gone
             }
             return status;
@@ -241,7 +238,14 @@ class CodeEditor {
     }
 
     async switchEditor(editorType) {
-        if (this.#currentEditor === editorType) return;
+        // Only skip when the requested backend is the one that is actually
+        // mounted. Comparing against #currentEditor alone swallowed the initial
+        // build: init() calls switchEditor(#currentEditor), #currentEditor
+        // defaults to "monaco", so the call returned immediately, require.config()
+        // never ran, #editorInstance stayed null and the page kept the bare
+        // <textarea> from the HTML -- i.e. no editor at all until the user picked
+        // a different backend in the dropdown.
+        if (this.#editorInstance && this.#currentEditor === editorType) return;
 
         const content = this.getContent();
         const editorElement = this.getEditorElement();
@@ -297,7 +301,7 @@ class CodeEditor {
             newEditor.style.height = height + 'px';
             // allow the editor to expand to full width
             newEditor.style.width = '100%';
-        } catch (e) {
+        } catch {
             newEditor.style.height = "300px";
             newEditor.style.width = '100%';
         }
@@ -333,7 +337,7 @@ class CodeEditor {
             try {
                 this.#editorInstance.updateOptions({ lineNumbers: "on" });
                 this.#editorInstance.layout();
-            } catch (e) {
+            } catch {
                 // ignore layout errors during early teardown
             }
         };
@@ -619,8 +623,27 @@ class VersionPanel {
 // Global variables
 let editor;
 let availableVersions = [];
-let versionPanels = [];
+const versionPanels = [];
 let panelCounter = 1;
+
+/**
+ * The directory this page was served from, without a trailing slash.
+ *
+ * Duplicated from playground.js (WP-02), which has the documented version.
+ *
+ * @param {string} pathname  e.g. "/my-repo/playground/index.html"
+ * @returns {string}         e.g. "/my-repo/playground"
+ */
+function basePathFor(pathname) {
+    let path = String(pathname || '/');
+    const lastSegment = path.slice(path.lastIndexOf('/') + 1);
+
+    if (!path.endsWith('/') && !lastSegment.includes('.')) {
+        path += '/';
+    }
+
+    return path.replace(/[^/]*$/, '').replace(/\/$/, '');
+}
 
 /**
  * Save content to a file
@@ -758,7 +781,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             try {
                 const resp = await fetch(`examples/_get_file.php?file=${exampleName}`);
                 if (resp.ok) content = await resp.text();
-            } catch (e) {
+            } catch {
                 const resp2 = await fetch(`examples/${exampleName}.php`);
                 if (resp2.ok) content = await resp2.text();
             }
@@ -805,7 +828,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const content = editor.getContent();
         try {
             await navigator.clipboard.writeText(content);
-        } catch (err) {
+        } catch {
             // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = content;
@@ -848,7 +871,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Already on multi-run page
     });
 
-    document.getElementById('help-link').addEventListener('click', (e) => {
+    document.getElementById('help-link').addEventListener('click', () => {
         const helpContainer = document.getElementById('help-container');
         helpContainer.classList.toggle('d-none');
     });

@@ -18,6 +18,9 @@
     ],
     "ignorePaths": [
       ".git/*/**",
+      // Dependencies ship READMEs in every language they are translated into.
+      "node_modules/**",
+      "**/node_modules/**",
       ".git/!(COMMIT_EDITMSG)",
       ".vscode/**",
       "build-tools/**",
@@ -26,6 +29,7 @@
       "*.bat",
       "*.cmake",
       "*.json",
+      "*.jsonc",
       "*.lock",
       "*.log",
       "cspell.json",

@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+#
+# .github/workflows/test-playground.yml
+#
+# SPDX-FileCopyrightText: 2025 Jens A. Koch.
+# SPDX-License-Identifier: MIT
+#
+# This file is part of https://github.com/jakoch/php-wasm-devbox
+#
+
+name: "Test Playground"
+
+on:
+  # Every pull request. The paths filter below is the actual gate: a run is only
+  # started when playground/** or a workflow file changed. The deploy workflow
+  # only runs on pushes to main, so without this job a broken playground is only
+  # ever discovered after it has been merged and published.
+  pull_request:
+    paths:
+      - 'playground/**'
+      - '.github/workflows/test-playground.yml'
+      - 'test/**'
+  # Manual runs, and runs on the default branch after a merge.
+  push:
+    branches:
+      - main
+    paths:
+      - 'playground/**'
+      - '.github/workflows/test-playground.yml'
+      - 'test/**'
+  workflow_dispatch:
+
+concurrency:
+  group: test-playground-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+# ---------------------------------------------------------------------------------------
+
+  test:
+    name: "Lint + Unit + E2E"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: playground
+
+    steps:
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v7 # https://github.com/actions/checkout
+
+      # generate-php-versions-json.sh writes the version list the page's dropdown
+      # is built from. It is gitignored (see .gitignore), so the list has to be
+      # generated here or the e2e tests would find an empty dropdown -- or, worse,
+      # pass against a stale file that happens to be in the runner image.
+      - name: 📋 Generate version list for PHP-WASM modules (php-versions.json)
+        run: ./build-tools/scripts/generate-php-versions-json.sh
+
+      # Same story for version.json, which the footer renders. generate-app-version-json.sh
+      # reads the version from package.json via `node -p`, hence the setup step.
+      - name: 🏷️ Set Application Version (version.json)
+        run: ./build-tools/scripts/generate-app-version-json.sh
+
+      - name: 🔽 Setup Node.js
+        uses: actions/setup-node@v7 # https://github.com/actions/setup-node
+        with:
+          node-version: '24'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎭 Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      # This was decorative: the "biome" package on npm is an unrelated dotenv
+      # tool, so "biome check" silently did nothing and always exited 0. The real
+      # linter is @biomejs/biome now, and this step fails when it finds something.
+      - name: 💅 Lint (biome)
+        run: npm run lint
+
+      - name: 🧪 Unit tests (node --test)
+        run: npm run test:unit
+
+      # test:module drives the built WASM module through the bridge
+      # (test/opcodes.test.mjs). The modules are committed, so this needs no
+      # Docker build -- only the Emscripten runtime they ship with.
+      - name: 🧪 Module tests (bridge + VLD)
+        run: npm run test:module
+
+      # Starts playground/tests/server.mjs itself; no webServer step needed here.
+      - name: 🧪 End-to-end tests (Playwright)
+        run: npm run ci:test:e2e
+
+      - name: 📤 Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        with:
+          name: playwright-report
+          path: playground/playwright-report
+          retention-days: 7
+
+      - name: 📤 Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        with:
+          name: playwright-traces
+          path: playground/test-results
+          retention-days: 7

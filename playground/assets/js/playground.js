@@ -58,11 +58,7 @@ class PHP {
     #stderrSink = null;
 
     // Static method to get the base path for WASM modules
-    // This needs to handle gh-pages and local development paths correctly
-    static getBasePath = () => {
-        const match = location.pathname.match(/^\/(php-wasm-devbox)(\/|$)/);
-        return match ? `/${match[1]}` : '';
-    };
+    static getBasePath = () => basePathFor(location.pathname);
 
     // Base path for WASM modules, set once during class initialization
     #basePath = PHP.getBasePath();
@@ -145,14 +141,14 @@ class PHP {
         this.#runPhp = async (code) => {
             try {
                 FS.mkdir(RUN_DIR);
-            } catch (e) {
+            } catch {
                 // EEXIST: the directory outlives individual runs, by design.
             }
             FS.writeFile(RUN_SNIPPET, code);
             const status = ccall("phpw", null, ["string"], [RUN_SNIPPET]);
             try {
                 FS.unlink(RUN_SNIPPET);
-            } catch (e) {
+            } catch {
                 // Already gone; nothing to clean up.
             }
             return status;
@@ -258,7 +254,7 @@ class PHP {
         try {
             try {
                 FS.mkdir(VLD_DIR);
-            } catch (e) {
+            } catch {
                 // EEXIST: the directory outlives individual runs by design.
             }
             FS.writeFile(SNIPPET_PATH, code);
@@ -270,7 +266,7 @@ class PHP {
             ccall('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 1]);
             try {
                 FS.unlink(SNIPPET_PATH);
-            } catch (e) {
+            } catch {
                 // Already gone; nothing to clean up.
             }
         }
@@ -635,7 +631,8 @@ class CodeEditor {
 
     updateStatusBar() {
         const content = this.getContent();
-        let line = 1, col = 1;
+        let line = 1;
+        let col = 1;
         if (this.#editorInstance) {
             if (this.#currentEditor === "monaco" && this.#editorInstance.getPosition) {
                 const pos = this.#editorInstance.getPosition();
@@ -776,7 +773,7 @@ class CodeEditor {
                         const rect = editor.getBoundingClientRect();
                         const height = (rect && rect.height) ? Math.round(rect.height) : editor.offsetHeight || 300;
                         newEditor.style.height = height + 'px';
-                    } catch (e) {
+                    } catch {
                         newEditor.style.height = "300px";
                     }
                     editor.replaceWith(newEditor);
@@ -800,7 +797,7 @@ class CodeEditor {
                         try {
                             monacoInstance.updateOptions({ lineNumbers: "on" });
                             monacoInstance.layout();
-                        } catch (e) {}
+                        } catch { /* Layout is best-effort; the editor still mounts. */ }
                         resolve(monacoInstance);
                     }, 50);
                 } catch (error) {
@@ -862,11 +859,29 @@ function saveToFile(content, filename) {
  * `Recoverable fatal error` is level 3 because the request still died.
  */
 const DIAGNOSTIC_SEVERITIES = [
-    { key: 'fatal', level: 3, singular: 'error', plural: 'errors', badgeClass: 'text-bg-danger', lineClass: 'sev-fatal', pattern: /^PHP (?:Fatal error|Recoverable fatal error|Parse error)\b/i },
-    { key: 'warning', level: 2, singular: 'warning', plural: 'warnings', badgeClass: 'text-bg-warning', lineClass: 'sev-warning', pattern: /^PHP (?:Warning|Strict Standards)\b/i },
-    { key: 'notice', level: 1, singular: 'notice', plural: 'notices', badgeClass: 'text-bg-info', lineClass: 'sev-notice', pattern: /^PHP Notice\b/i },
-    { key: 'deprecated', level: 0, singular: 'deprecation', plural: 'deprecations', badgeClass: 'text-bg-secondary', lineClass: 'sev-deprecated', pattern: /^PHP Deprecated\b/i },
+    { key: 'fatal', level: 3, singular: 'error', plural: 'errors', badgeClass: 'text-bg-danger', lineClass: 'sev-fatal', pattern: /^(?:PHP )?(?:Fatal error|Recoverable fatal error|Parse error)\b/i },
+    { key: 'warning', level: 2, singular: 'warning', plural: 'warnings', badgeClass: 'text-bg-warning', lineClass: 'sev-warning', pattern: /^(?:PHP )?(?:Warning|Strict Standards)\b/i },
+    { key: 'notice', level: 1, singular: 'notice', plural: 'notices', badgeClass: 'text-bg-info', lineClass: 'sev-notice', pattern: /^(?:PHP )?Notice\b/i },
+    { key: 'deprecated', level: 0, singular: 'deprecation', plural: 'deprecations', badgeClass: 'text-bg-secondary', lineClass: 'sev-deprecated', pattern: /^(?:PHP )?Deprecated\b/i },
 ];
+
+/** The `PHP ` prefix comes from error_log, not display_errors, so it is optional. */
+const DIAGNOSTIC_LOCATION = / in \S+ on line \d+| in \S+:\d+/;
+
+/** What the Errors panel shows when there is nothing to report. */
+const DIAGNOSTIC_PLACEHOLDER = 'No Errors!';
+
+/**
+ * Classify one line, or null if it is not a PHP diagnostic.
+ *
+ * The location reference is what keeps `echo "Notice: all good";` from being
+ * filed as a notice.
+ */
+function classifyDiagnostic(line) {
+    const text = line.trim();
+    if (!text || !DIAGNOSTIC_LOCATION.test(text)) return null;
+    return DIAGNOSTIC_SEVERITIES.find((severity) => severity.pattern.test(text)) || null;
+}
 
 const NO_DIAGNOSTICS = Object.freeze({
     total: 0, counts: Object.freeze({ fatal: 0, warning: 0, notice: 0, deprecated: 0 }),
@@ -885,15 +900,15 @@ const NO_DIAGNOSTICS = Object.freeze({
 function parseDiagnostics(text) {
     if (!text) return NO_DIAGNOSTICS;
 
+    const body = String(text).trim();
+    if (!body || body === DIAGNOSTIC_PLACEHOLDER) return NO_DIAGNOSTICS;
+
     const counts = { fatal: 0, warning: 0, notice: 0, deprecated: 0 };
     const entries = [];
     let worst = null;
 
     for (const raw of String(text).split('\n')) {
-        const line = raw.trim();
-        if (!line) continue;
-
-        const match = DIAGNOSTIC_SEVERITIES.find((s) => s.pattern.test(line));
+        const match = classifyDiagnostic(raw);
         if (!match) continue;
 
         counts[match.key]++;
@@ -902,7 +917,10 @@ function parseDiagnostics(text) {
     }
 
     const total = entries.length;
-    if (!total) return NO_DIAGNOSTICS;
+    // Unclassified error text still counts as one error: a module that will not
+    // load is not a PHP diagnostic, but the badge must still point at the panel
+    // that has something in it.
+    if (!total) return { total: 1, counts, worst: null, badgeClass: 'text-bg-danger', entries };
 
     return { total, counts, worst, badgeClass: worst.badgeClass, entries };
 }
@@ -915,7 +933,9 @@ function describeDiagnostics(summary) {
         .filter((s) => summary.counts[s.key] > 0)
         .map((s) => `${summary.counts[s.key]} ${summary.counts[s.key] === 1 ? s.singular : s.plural}`);
 
-    return parts.join(', ');
+    // Unclassified error text has no severity to name; announcing "" would say
+    // nothing at all, which is the case this exists to prevent.
+    return parts.join(', ') || `${summary.total} ${summary.total === 1 ? 'error' : 'errors'}`;
 }
 
 /**
@@ -1078,16 +1098,48 @@ async function loadVersion() {
     }
 }
 
+/**
+ * The directory a page was served from, without a trailing slash.
+ *
+ * WASM module URLs hang off it, so it has to be whatever directory index.html
+ * lives in — not a hardcoded repository name, which breaks the moment the repo is
+ * forked, renamed, or served from a subdirectory.
+ *
+ * The awkward case is a URL that has no trailing slash but is not a file: at
+ * "/my-repo" every relative URL resolves against "/" instead of "/my-repo/", so
+ * the slash has to go back before the last segment is stripped.
+ *
+ * @param {string} pathname  e.g. "/my-repo/playground/index.html"
+ * @returns {string}         e.g. "/my-repo/playground"
+ */
+function basePathFor(pathname) {
+    let path = String(pathname || '/');
+    const lastSegment = path.slice(path.lastIndexOf('/') + 1);
+
+    if (!path.endsWith('/') && !lastSegment.includes('.')) {
+        path += '/';
+    }
+
+    return path.replace(/[^/]*$/, '').replace(/\/$/, '');
+}
+
 // --- Error Highlighting Utilities ---
 function parsePhpError(errorOutput) {
     if (!errorOutput) return null;
     // Robust regex: match 'on line N' or 'in ... on line N' or 'on line N,'
     const regex = /on line (\d+)/i;
     const match = regex.exec(errorOutput);
+    // The first *non-blank* line, not split('\n')[0]: PHP prefixes its
+    // diagnostics with a newline, so for a parse error the raw first line is
+    // empty -- and both marker backends silently drop a marker with an empty
+    // message (Monaco's MarkerService keeps none, CodeMirror renders a span with
+    // no tooltip). That is why a parse error used to produce no editor marker at
+    // all while the Errors panel still showed the message.
+    const firstLine = errorOutput.split('\n').find((line) => line.trim() !== '') ?? '';
     if (match) {
-        const line = parseInt(match[1], 10);
-        // Extract message (first line or up to 'in script')
-        let message = errorOutput.split('\n')[0];
+        const line = Number.parseInt(match[1], 10);
+        // Try to trim after 'in script' for clarity
+        let message = firstLine;
         // Try to trim after 'in script' for clarity
         const inScriptIdx = message.indexOf(' in script');
         if (inScriptIdx !== -1) message = message.slice(0, inScriptIdx);
@@ -1095,8 +1147,7 @@ function parsePhpError(errorOutput) {
     }
     // Fallback: highlight first line if error detected but no line number
     if (/parse error|syntax error|fatal error|unexpected/i.test(errorOutput)) {
-        let message = errorOutput.split('\n')[0];
-        return { line: 1, message };
+        return { line: 1, message: firstLine };
     }
     return null;
 }
@@ -1240,9 +1291,11 @@ if (typeof document !== 'undefined') {
 
     function updateErrorBadge(summary) {
         if (errorBadge) {
+            // One assignment: the previous version toggled d-none and then
+            // overwrote className, so a "0" badge stayed visible on a clean run.
+            const hidden = summary.total === 0;
             errorBadge.textContent = String(summary.total);
-            errorBadge.classList.toggle('d-none', summary.total === 0);
-            errorBadge.className = `badge ms-1 ${summary.badgeClass}`;
+            errorBadge.className = `badge ms-1 ${summary.badgeClass}${hidden ? ' d-none' : ''}`;
         }
 
         // A dedicated live region, not the badge itself. Announcing the badge
@@ -1319,7 +1372,7 @@ if (typeof document !== 'undefined') {
             // needs ccall and FS, which only exist once it has been loaded.
             await php.loadModule(version);
 
-            const verbosity = opcodeVerbosity ? parseInt(opcodeVerbosity.value, 10) || 0 : 0;
+            const verbosity = opcodeVerbosity ? Number.parseInt(opcodeVerbosity.value, 10) || 0 : 0;
             const dump = php.getOpcodes(editor.getContent(), verbosity);
 
             opcodeDumpText = dump;
@@ -1360,7 +1413,7 @@ if (typeof document !== 'undefined') {
             try {
                 await navigator.clipboard.writeText(opcodeDumpText);
                 setOpcodeStatus('Opcode dump copied to the clipboard.');
-            } catch (error) {
+            } catch {
                 setOpcodeStatus('The clipboard is not available in this browser.');
             }
         });
@@ -1408,8 +1461,8 @@ if (typeof document !== 'undefined') {
     if (autoRunIntervalSelect) {
         autoRunIntervalSelect.value = (AUTO_RUN_INTERVAL_MS / 1000).toString();
         autoRunIntervalSelect.addEventListener("change", (event) => {
-            const newVal = parseInt(event.target.value, 10);
-            if (!isNaN(newVal)) {
+            const newVal = Number.parseInt(event.target.value, 10);
+            if (!Number.isNaN(newVal)) {
                 AUTO_RUN_INTERVAL_MS = newVal * 1000;
                 if (autoRunIntervalDisplay) {
                     autoRunIntervalDisplay.textContent = `Interval: ${newVal}s`;
@@ -1444,13 +1497,15 @@ if (typeof document !== 'undefined') {
         } else {
             uiElements.output = result.output;
         }
+        // The module keeps the two streams apart: display_errors output goes to
+        // stderr (see phpw_error_cb() in the bridge), program output to stdout.
         uiElements.output_error = result.output_error;
         uiElements.phpVersionDisplay = result.version;
         uiElements.perfDataDisplay = result.executionTime;
         updateErrorBadge(parseDiagnostics(result.output_error));
-        // Highlight error in editor if present
-        let errorInfo = parsePhpError(result.output_error);
-        if (!errorInfo) errorInfo = parsePhpError(result.output);
+        // The line number comes from stderr; the stdout fallback covers a module
+        // built before the streams were separated.
+        const errorInfo = parsePhpError(result.output_error) || parsePhpError(result.output);
         setEditorErrorMarker(editor.editorInstance, editor.currentEditor, errorInfo);
     }
 
@@ -1654,7 +1709,7 @@ if (typeof document !== 'undefined') {
                     try {
                         const resp = await fetch(`examples/_get_file.php?file=${exampleName}`);
                         if (resp.ok) content = await resp.text();
-                    } catch (e) {
+                    } catch {
                         // fallback to direct file fetch
                         const resp2 = await fetch(`examples/${exampleName}.php`);
                         if (resp2.ok) content = await resp2.text();
@@ -1704,6 +1759,91 @@ if (typeof document !== 'undefined') {
         fontIncrease.addEventListener("click", () => editor.setFontSize(editor.getFontSize() + 1));
     }
 
+    /* Load, Save and Copy
+     *
+     * These three buttons exist in index.html and were wired up only in
+     * multi-run.js, so on this page they did nothing (WP-01.1). The Help panel
+     * has been advertising Ctrl+S and Ctrl+C as well.
+     */
+
+    // Give a button a short-lived visual confirmation, reusing the Run button's flash.
+    function flashButton(button) {
+        if (!button) return;
+        button.classList.add('run-flash');
+        setTimeout(() => button.classList.remove('run-flash'), 400);
+    }
+
+    const loadFileButton = document.getElementById("load-file-button");
+    if (loadFileButton) {
+        loadFileButton.addEventListener("click", () => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".php,.txt";
+            input.addEventListener("change", async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                editor.setContent(await file.text());
+                setEditorErrorMarker(editor.editorInstance, editor.currentEditor, null);
+            });
+            input.click();
+        });
+    }
+
+    /** Filename offered by Save: playground-YYYYMMDD-HHMM.php, like multi-run.js. */
+    function playgroundFilename() {
+        const now = new Date();
+        const pad = (value) => String(value).padStart(2, "0");
+        const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+        const time = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+        return `playground-${date}-${time}.php`;
+    }
+
+    async function saveEditorContent() {
+        saveToFile(editor.getContent(), playgroundFilename());
+        flashButton(document.getElementById("save-button"));
+    }
+
+    const saveButton = document.getElementById("save-button");
+    if (saveButton) saveButton.addEventListener("click", () => { saveEditorContent(); });
+
+    const copyButton = document.getElementById("copy-button");
+    if (copyButton) {
+        copyButton.addEventListener("click", async () => {
+            await copyToClipboard(editor.getContent());
+            flashButton(copyButton);
+        });
+    }
+
+    /**
+     * Copy text, falling back to a hidden textarea where the async clipboard API
+     * is unavailable or blocked (it needs a secure context, so http:// on a LAN
+     * is one of the cases that matters here).
+     *
+     * @returns {Promise<boolean>} whether the copy went through
+     */
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            const scratch = document.createElement("textarea");
+            scratch.value = text;
+            scratch.setAttribute("readonly", "");
+            scratch.style.position = "fixed";
+            scratch.style.opacity = "0";
+            document.body.appendChild(scratch);
+            scratch.select();
+            let copied = false;
+            try {
+                copied = document.execCommand("copy");
+            } catch {
+                copied = false;
+            }
+            document.body.removeChild(scratch);
+            return copied;
+        }
+    }
+
     // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
@@ -1713,11 +1853,28 @@ if (typeof document !== 'undefined') {
             } else if (e.key === "-" || e.key === "_") {
                 editor.setFontSize(editor.getFontSize() - 1);
                 e.preventDefault();
+            } else if (e.key === "s" || e.key === "S") {
+                // Not advertised in the Help panel, but Ctrl+S otherwise opens the
+                // browser's "save page" dialog, which is never what was meant.
+                e.preventDefault();
+                saveEditorContent();
+            } else if (e.key === "c" || e.key === "C") {
+                // Only when there is no selection: with one, Ctrl+C has to stay
+                // the browser's copy, or text selection becomes unusable.
+                const selection = window.getSelection();
+                if (selection && !selection.isCollapsed) return;
+                e.preventDefault();
+                copyToClipboard(editor.getContent()).then((copied) => {
+                    flashButton(copyButton);
+                    if (!copied) {
+                        uiElements.output_error = "The clipboard is not available in this browser.";
+                    }
+                });
             }
-	}
+        }
     });
 });
 }
 
 /* Exported so a Node test harness can import them; unused by the page itself. */
-export { escapeHtml, renderOpcodeLine, renderOpcodeDump, setupResultTabs, parsePhpError, parseDiagnostics, describeDiagnostics, renderDiagnostics };
+export { escapeHtml, renderOpcodeLine, renderOpcodeDump, setupResultTabs, parsePhpError, parseDiagnostics, describeDiagnostics, renderDiagnostics, classifyDiagnostic, compareVersions, basePathFor };

@@ -18,3 +18,10 @@
 # binary", which is true of diffing but not of storage: a consumer without the
 # LFS smudge filter gets pointer text on disk, not the module.
 playground/assets/wasm/*.wasm binary
+
+# The .mjs glue next to those modules is text and stays reviewable, but
+# Emscripten pads some of its lines, so a rebuild makes `git diff --check`
+# report trailing whitespace in generated output. Silence just that complaint:
+# `whitespace=-blank-at-eol` drops the blank-at-eol check for these paths and
+# nothing else.
+playground/assets/wasm/*.mjs whitespace=-blank-at-eol

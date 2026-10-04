@@ -42,8 +42,10 @@
 #include "Zend/zend_types.h"
 
 #include <emscripten.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /**
  * @brief PHP-WASM Bridge: runs PHP inside an Emscripten module.
@@ -87,6 +89,8 @@ static int phpw_request_active = 0;
 
 static void phpw_request_begin(void);
 static void phpw_request_end(void);
+static int phpw_ini_set(const char *name, const char *value);
+static void phpw_restore_sapi_name(void);
 
 /* Error text for the most recent execution. */
 static char *phpw_error_buf = NULL;
@@ -143,8 +147,10 @@ static void phpw_set(char **slot, const char *value)
  *
  * php_embed_shutdown() used to flush on its way out; since the module now stays
  * initialised between executions, that no longer happens and output arrives an
- * execution late. Flushing directly also avoids the bare newlines the previous
- * revision wrote to both streams to force the issue.
+ * execution late.
+ *
+ * Must run before phpw_request_end(): php_request_shutdown() destroys the output
+ * layer, so a flush afterwards has nothing left to push.
  */
 static void phpw_flush(void)
 {
@@ -154,6 +160,12 @@ static void phpw_flush(void)
 
 	fflush(stdout);
 	fflush(stderr);
+
+	/* Emscripten's TTY only calls Module.print when it sees a newline, so an
+	 * unterminated write stayed in tty.output until the *next* run printed one.
+	 * fsync() drains it via TTY.default_tty_ops.fsync(), without adding a byte. */
+	(void) fsync(fileno(stdout));
+	(void) fsync(fileno(stderr));
 }
 
 /** Record a failure reason for retrieval via phpw_last_error(). */
@@ -200,6 +212,61 @@ static size_t phpw_read_post(char *buffer, size_t count_bytes)
 	return count_bytes;
 }
 
+/* php_error_cb(), saved by phpw_init() before zend_error_cb is replaced. */
+static void (*phpw_error_cb_previous)(int type, zend_string *file, uint32_t line, zend_string *message) = NULL;
+
+/* The SAPI's own name, saved the first time phpw_error_cb() borrows it. */
+static char *phpw_sapi_name = NULL;
+
+/**
+ * Put the SAPI's real name back.
+ *
+ * php_error_cb() borrows it, and a fatal error longjmps straight out of that
+ * callback without unwinding through C, so the borrow cannot be undone there.
+ * phpw_request_begin() and phpw_request_end() do it instead: nothing else runs
+ * in between except phpw_flush().
+ */
+static void phpw_restore_sapi_name(void)
+{
+	if (phpw_sapi_name != NULL) {
+		sapi_module.name = phpw_sapi_name;
+		phpw_sapi_name = NULL;
+	}
+}
+
+/**
+ * php_error_cb() with the SAPI name borrowed, so diagnostics land on stderr.
+ *
+ * display_errors writes to stdout for every SAPI except cli/cgi/phpdbg, where
+ * display_errors=stderr is honoured (the display branch of php_error_cb() in
+ * main/main.c). So without this, a parse error, a fatal or a warning arrives
+ * interleaved with the script's own stdout: the playground's Errors panel sat on
+ * its "No Errors!" placeholder while a fatal error was rendered as program
+ * output, and the two could not be told apart. Setting the INI alone does
+ * nothing, because the gate is the name.
+ *
+ * The borrow lasts only for this callback on purpose: 43 places in the tree
+ * compare sapi_module.name, and phar, session and libxml all behave differently
+ * for "cli".
+ */
+static void phpw_error_cb(int type, zend_string *file, uint32_t line, zend_string *message)
+{
+	if (phpw_sapi_name == NULL) {
+		phpw_sapi_name = sapi_module.name;
+	}
+	sapi_module.name = (char *) "cli";
+
+	/*
+	 * Set here rather than once at startup: PG(display_errors) is per-request
+	 * state, and whatever the request cycle does to it, this is the moment the
+	 * display branch reads. (Setting it in phpw_init() appeared to succeed and
+	 * then read back as "1" on the next request.)
+	 */
+	phpw_ini_set("display_errors", "stderr");
+
+	phpw_error_cb_previous(type, file, line, message);
+}
+
 /**
  * Initialise the SAPI and module. Safe to call repeatedly; only the first
  * call has an effect.
@@ -228,6 +295,10 @@ int EMSCRIPTEN_KEEPALIVE phpw_init(void)
 		phpw_set_error("php_embed_init() failed");
 		return PHPW_ERROR;
 	}
+
+	/* Must come after php_embed_init(), which installs php_error_cb. */
+	phpw_error_cb_previous = zend_error_cb;
+	zend_error_cb = phpw_error_cb;
 
 	/*
 	 * php_embed_init() performs a php_request_startup() of its own, so a
@@ -265,6 +336,8 @@ void EMSCRIPTEN_KEEPALIVE phpw_destroy(void)
 
 	php_embed_shutdown();
 	phpw_initialised = 0;
+
+	phpw_restore_sapi_name();
 }
 
 /**
@@ -310,6 +383,9 @@ static void phpw_set_server_var(const char *name, const char *value)
 static void phpw_request_begin(void)
 {
 	const char *method = phpw_request_method ? phpw_request_method : "GET";
+
+	/* A fatal error in an earlier request may have left the SAPI name borrowed. */
+	phpw_restore_sapi_name();
 
 	if (phpw_request_active) {
 		/* Defensive: a leaked request would otherwise be shut down twice. */
@@ -368,6 +444,8 @@ static void phpw_request_end(void)
 
 	php_request_shutdown(NULL);
 	phpw_request_active = 0;
+
+	phpw_restore_sapi_name();
 }
 
 /**
@@ -542,8 +620,9 @@ char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
 
 	zval_ptr_dtor(&ret_zv);
 
-	phpw_request_end();
+	/* While the request is still live: see phpw_flush(). */
 	phpw_flush();
+	phpw_request_end();
 
 	return result;
 }
@@ -594,8 +673,9 @@ int EMSCRIPTEN_KEEPALIVE phpw_run(char *code)
 		status = PHPW_ERROR;
 	} zend_end_try();
 
-	phpw_request_end();
+	/* While the request is still live: see phpw_flush(). */
 	phpw_flush();
+	phpw_request_end();
 
 	return status;
 }
@@ -646,8 +726,9 @@ int EMSCRIPTEN_KEEPALIVE phpw(char *file)
 		status = PHPW_ERROR;
 	} zend_end_try();
 
-	phpw_request_end();
+	/* While the request is still live: see phpw_flush(). */
 	phpw_flush();
+	phpw_request_end();
 
 	return status;
 }
@@ -693,7 +774,7 @@ static void phpw_vld_int_str(int value, char *buf, size_t buf_len)
  * @param value  New value
  * @return PHPW_OK on success, PHPW_ERROR if the directive is unknown or refused
  */
-static int phpw_vld_ini_set(const char *name, const char *value)
+static int phpw_ini_set(const char *name, const char *value)
 {
 	zend_string *key;
 	zend_result result;
@@ -732,10 +813,10 @@ static int phpw_vld_apply(int active, int execute, int verbosity, int dump_paths
 
 	phpw_vld_int_str(verbosity, verbosity_buf, sizeof(verbosity_buf));
 
-	if (phpw_vld_ini_set("vld.active", active ? "1" : "0") != PHPW_OK
-		|| phpw_vld_ini_set("vld.execute", execute ? "1" : "0") != PHPW_OK
-		|| phpw_vld_ini_set("vld.verbosity", verbosity_buf) != PHPW_OK
-		|| phpw_vld_ini_set("vld.dump_paths", dump_paths ? "1" : "0") != PHPW_OK) {
+	if (phpw_ini_set("vld.active", active ? "1" : "0") != PHPW_OK
+		|| phpw_ini_set("vld.execute", execute ? "1" : "0") != PHPW_OK
+		|| phpw_ini_set("vld.verbosity", verbosity_buf) != PHPW_OK
+		|| phpw_ini_set("vld.dump_paths", dump_paths ? "1" : "0") != PHPW_OK) {
 		/*
 		 * A single missing directive means this build has no VLD, or an
 		 * incompatible one. Say so, rather than letting the caller see an empty

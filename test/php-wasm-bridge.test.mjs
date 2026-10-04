@@ -31,6 +31,9 @@ const stderr = [];
 // playground collects PHP output, so the suite asserts on the same path rather
 // than on a bridge-specific buffer.
 let stdout = '';
+/* The same print() calls kept individually: Emscripten strips the newline, so a
+ * blank line arrives as an empty call and only the boundaries show it. */
+const stdoutChunks = [];
 /*
  * Emscripten captures the printErr callback passed to createPhpModule() and
  * never consults Module.printErr again, so reassigning it after construction
@@ -43,6 +46,7 @@ const createPhpModule = (await import(pathToFileURL(resolve(modulePath)))).defau
 
 const mod = await createPhpModule({
   print: (data) => {
+    stdoutChunks.push(data);
     stdout += data;
   },
   printErr: (...args) => {
@@ -61,10 +65,9 @@ const mod = await createPhpModule({
 /**
  * Run code and return everything it wrote to stdout.
  *
- * Note: Emscripten's Node TTY is line buffered, so a write that does not end in
- * a newline is not delivered until a later one arrives. In a browser `print` is
- * called synchronously and this does not apply, but the test runs under Node, so
- * the cases below are newline terminated.
+ * An unterminated write used to be held in Emscripten's TTY buffer until a later
+ * newline arrived -- not a Node-only quirk, it blanked the playground's output
+ * panel in Chromium too. Section 18 keeps that fixed.
  */
 function execStdout(code) {
   stdout = '';
@@ -394,7 +397,7 @@ console.log('\n# 16. opcode dumping via VLD (optional extension)');
       try {
         try {
           FS.mkdir(VLD_DIR);
-        } catch (e) {
+        } catch {
           /* EEXIST */
         }
         FS.writeFile(SNIPPET, code);
@@ -409,7 +412,7 @@ console.log('\n# 16. opcode dumping via VLD (optional extension)');
         );
         try {
           FS.unlink(SNIPPET);
-        } catch (e) {
+        } catch {
           /* already gone */
         }
       }
@@ -469,6 +472,118 @@ console.log('\n# 16. opcode dumping via VLD (optional extension)');
   }
 }
 
+console.log('\n# 18. output is flushed even when it has no trailing newline')
+// Regression: an unterminated write used to be held in Emscripten's TTY buffer
+// until some later newline arrived, so it printed nothing and turned up in the
+// *next* run. phpw_flush() now drains that buffer with fsync(1).
+{
+  // The print handler above concatenates raw, which would flatten blank lines;
+  // the playground re-joins the calls with "\n", so these do the same.
+  function collected(code) {
+    stdoutChunks.length = 0
+    run(code)
+    return stdoutChunks.join('\n')
+  }
+
+  check('an unterminated echo reaches stdout', ((stdout = ''), run('echo "abc";'), stdout), 'abc')
+
+  // The bleed was the user-visible half: the next run must show only its own output.
+  check('it does not bleed into the next run', ((stdout = ''), run('echo "second";'), stdout), 'second')
+  check('and again', ((stdout = ''), run('echo "third";'), stdout), 'third')
+
+  check('an unterminated print() reaches stdout', execStdout('print "no-newline"'), 'no-newline')
+  check('printf() without a newline reaches stdout', execStdout('printf("%s-%s", "a", "b")'), 'a-b')
+
+  // phpw() is the path the playground uses; all three entry points had the bug.
+  FS.writeFile('/tmp/phpw-test-no-newline.php', '<?php echo "from file, unterminated";')
+  check(
+    'phpw() delivers an unterminated file script',
+    ((stdout = ''), ccall('phpw', 'number', ['string'], ['/tmp/phpw-test-no-newline.php']), stdout),
+    'from file, unterminated'
+  )
+
+  // A flush() inside the script must not add a byte, and neither must the bridge.
+  // zend_eval_string() compiles an *expression*, so a bare `echo "x";` is refused.
+  check('flush() does not add a newline', ((stdout = ''), run('echo "flush-me"; flush();'), stdout), 'flush-me')
+  check(
+    'phpw_exec() refuses a bare statement',
+    ((stdout = ''), exec('echo "x";'), lastError()),
+    'parse error in expression'
+  )
+
+  // Blank lines are real output: the WP-01.7 regression, in a second place.
+  check('blank lines survive', collected('echo "a\\n\\n\\nb\\n";'), 'a\n\n\nb')
+  check('a lone newline survives', collected('echo "\\n";'), '')
+
+  // A diagnostic used to be the only thing that flushed a pending tail, and it
+  // used to arrive on stdout. Both are now fixed, so it flushes nothing.
+  check(
+    'a diagnostic does not disturb stdout',
+    ((stdout = ''), run('echo "before"; trigger_error("w", E_USER_WARNING);'), stdout),
+    'before'
+  )
+  check(
+    'and does not lose the pending tail',
+    ((stdout = ''), run('echo "tail"; trigger_error("w", E_USER_WARNING);'), stdout),
+    'tail'
+  )
+
+  // Per-execution isolation must survive all of that.
+  check('exec still returns its value', exec('1+1'), '2')
+  check('and stdout is empty for a silent expression', execStdout('1+1'), '')
+}
+
+console.log('\n# 19. diagnostics go to stderr, program output to stdout')
+// The embed SAPI has no stderr display path: php_error_cb() only honours
+// display_errors=stderr when sapi_module.name is cli/cgi/phpdbg (main/main.c).
+// phpw_error_cb() borrows that name for the duration of the callback, so the two
+// streams are separable and the playground needs no heuristics.
+{
+  const both = code => {
+    stdout = ''
+    stderr.length = 0
+    run(code)
+    return { out: stdout, err: stderr.join('\n') }
+  }
+
+  const clean = both('echo "just output\\n";')
+  check('a clean script writes no stderr', clean.err, '')
+  check('and its output on stdout', clean.out, 'just output')
+
+  const warning = both('echo "before\\n"; trigger_error("boom", E_USER_WARNING);')
+  check('a warning leaves stdout', warning.out, 'before')
+  check('and lands on stderr', warning.err, 'Warning: boom in script on line 1')
+
+  const fatal = both('echo "kept\\n"; new NoSuchClass();')
+  check('a fatal leaves stdout', fatal.out, 'kept')
+  check('lands on stderr', /^Fatal error: Uncaught Error: Class "NoSuchClass" not found/m.test(fatal.err), true)
+  // The stack trace carries "thrown in ... on line N", which is where the
+  // playground reads the line number from.
+  check(
+    'with its stack trace',
+    fatal.err.includes('Stack trace:') && /thrown in script on line \d+/.test(fatal.err),
+    true
+  )
+
+  // Through phpw(), which is the path the playground uses. phpw_run() reports a
+  // compile error only through phpw_last_error(), with no text on either stream.
+  stdout = ''
+  stderr.length = 0
+  FS.writeFile('/tmp/phpw-test-parse.php', '<?php function((')
+  check('a parse error returns non-zero', ccall('phpw', 'number', ['string'], ['/tmp/phpw-test-parse.php']) !== 0, true)
+  check('a parse error reaches stderr', /^Parse error:/m.test(stderr.join('\n')), true)
+  check('and writes nothing to stdout', stdout, '')
+
+  // log_errors is 0 in this build, so a diagnostic must not be duplicated.
+  check('no duplicate on stderr', both('trigger_error("once", E_USER_WARNING);').err.split('Warning:').length - 1, 1)
+
+  // The name borrow escapes a fatal error, which longjmps out of the callback,
+  // so phpw_request_begin()/end() are what put it back.
+  check('the SAPI name is restored', exec('PHP_SAPI'), 'embed')
+  check('after a fatal error', (both('new NoSuchClass();'), exec('PHP_SAPI')), 'embed')
+  check('and after phpw_destroy()', (ccall('phpw_destroy', null, [], []), exec('PHP_SAPI')), 'embed')
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'}: ${checks - failures}/${checks} checks passed`);
 if (failed.length) {
   console.log('failed: ' + failed.join(', '));
@@ -477,4 +592,6 @@ if (stderr.length) {
   console.log('\n--- stderr (last 10 lines) ---\n' + stderr.slice(-10).join('\n'));
 }
 
-process.exit(failures === 0 ? 0 : 1);
+/* process.exitCode, not process.exit(): the latter truncates pending stdout,
+ * which silently swallows the per-check FAIL lines above. */
+process.exitCode = failures === 0 ? 0 : 1;

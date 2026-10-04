@@ -283,9 +283,18 @@ console.log('\n# 5. diagnostic severity');
   assert('no raw angle brackets', !html.replace(/<\/?span[^>]*>/g, '').includes('<'));
 
   // Regression guard for the WP-01.7 fix: a blank line in stderr must not be
-  // dropped just because the neighbouring lines are now wrapped in spans.
-  const withBlanks = renderDiagnostics('PHP Notice:  a\n\nPHP Warning:  b\n');
+  // dropped just because the neighbouring lines are now wrapped in spans. The two
+  // diagnostics carry a file and line, as every real one does -- that is what
+  // classifyDiagnostic() requires to tell them from program output.
+  const withBlanks = renderDiagnostics('PHP Notice:  a in /a.php on line 1\n\nPHP Warning:  b in /a.php on line 2\n');
   assert('blank lines survive', withBlanks.includes('</span>\n\n<span'));
+
+  // Error text that matches no severity is still counted once and escaped, but
+  // nothing is tinted -- there is no severity to tint it with.
+  const unclassified = renderDiagnostics('PHP execution failed: module missing');
+  assert('unclassified text still counts', parseDiagnostics('PHP execution failed: module missing').total, 1);
+  assert('unclassified text is not tinted', !unclassified.includes('<span'));
+  assert('unclassified summary is not silent', describeDiagnostics(parseDiagnostics('PHP execution failed: module missing')), '1 error');
 
   // Anything a script writes to stderr that is not a diagnostic is escaped.
   const hostile = renderDiagnostics('<script>alert(1)</script>');
@@ -339,14 +348,14 @@ console.log('\n# 6. getOpcodes against a real module');
 
     let status = 0;
     try {
-      try { mod.FS.mkdir('/vld'); } catch (e) { /* EEXIST */ }
+      try { mod.FS.mkdir('/vld'); } catch { /* EEXIST */ }
       mod.FS.writeFile('/vld/code.php', code);
       status = c('phpw', null, ['string'], ['/vld/code.php']);
     } finally {
       stdoutSink = null;
       stderrSink = null;
       c('phpw_vld_config', 'number', ['number', 'number', 'number', 'number'], [0, 1, 1, 1]);
-      try { mod.FS.unlink('/vld/code.php'); } catch (e) { /* gone */ }
+      try { mod.FS.unlink('/vld/code.php'); } catch { /* gone */ }
     }
 
     if (status !== 0) throw new Error(c('phpw_last_error', 'string', [], []) || 'compile failed');
@@ -397,4 +406,6 @@ console.log('\n# 6. getOpcodes against a real module');
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'}: ${checks - failures}/${checks} checks passed`);
 if (failed.length) console.log('failed: ' + failed.join(', '));
-process.exit(failures === 0 ? 0 : 1);
+/* process.exitCode, not process.exit(): the latter truncates pending stdout,
+ * which silently swallows the per-check FAIL lines above. */
+process.exitCode = failures === 0 ? 0 : 1;

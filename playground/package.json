@@ -8,24 +8,27 @@
   "homepage": "https://github.com/jakoch/php-wasm-devbox",
   "main": "index.js",
   "scripts": {
-    "format:check": "biome check assets/js ../test",
-    "format:write": "biome check --write assets/js ../test",
     "pnpm:audit": "pnpm audit --audit-level=high",
     "pnpm:outdated": "pnpm outdated",
     "pnpm:clean_install": "pnpm install --frozen-lockfile",
     "pnpm:install": "pnpm install",
     "pnpm:update": "pnpm update",
+    "serve": "node tests/server.mjs",
+    "test": "npm run lint && npm run test:unit",
+    "test:unit": "node --test \"tests/unit/**/*.test.mjs\"",
+    "test:module": "node ../test/opcodes.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "ci:test:e2e": "CI=1 DEBUG=pw:browser npm run test:e2e 2>/dev/null",
-    "test:unit": "node ../test/opcodes.test.mjs",
-    "test": "npm run format:check && npm run test:unit"
+    "ci:test:e2e": "CI=1 npm run test:e2e",
+    "lint": "biome check assets/js ../test tests",
+    "lint:fix": "biome check --write assets/js ../test tests",
+    "format:write": "biome format --write assets/js ../test tests"
   },
   "devDependencies": {
-    "biome": "^0.3.3",
-    "playwright": "^1.55.1"
+    "playwright": "^1.55.1",
+    "@biomejs/biome": "^2.5.15"
   },
   "dependencies": {
     "node": "^24.21.0"

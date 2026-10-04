@@ -39,7 +39,7 @@
   </noscript>
   <!-- Header Navbar -->
   <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow border-bottom border-dark">
-    <nav class="bd-gutter flex-wrap flex-lg-nowrap ms-5">
+    <nav class="bd-gutter flex-wrap flex-lg-nowrap ms-5 flex-grow-1">
       <a class="navbar-brand p-0 me-2 fs-4" href="/" aria-label="PHP-WASM Multi-Run Editor">
         <i class="bi bi-filetype-php fs-3 me-2" aria-hidden="true"></i><span class="visually-hidden">PHP logo</span>
         <h1 class="d-inline fs-3 m-0 p-0">PHP-WASM Multi-Run Editor</h1>
@@ -50,7 +50,7 @@
       </button>
       <div class="collapse navbar-collapse container-fluid justify-content-start" id="bdNavbar">
         <!-- Left section -->
-        <ul class="navbar-nav me-auto bd-navbar-nav pt-2 py-lg-0 ms-5">
+        <ul class="navbar-nav flex-grow-1 bd-navbar-nav pt-2 py-lg-0 ms-5">
           <li class="nav-item">
             <a id="playground-link" class="nav-link fs-4 d-flex align-items-center" href="index.html">
               <i class="bi bi-pencil-square fs-3 me-2" aria-hidden="true"></i><span
@@ -204,7 +204,7 @@
     <!-- Editor and Multi-Run Panels -->
     <div id="editor-container" class="row" role="region" aria-label="Editor and Multi-Run Panels">
       <!-- Left Side (Shared Editor) -->
-      <div id="left" class="col-6" role="region" aria-label="Shared Editor Panel">
+      <div id="left" class="col-12 col-lg-6" role="region" aria-label="Shared Editor Panel">
         <div id="editor-wrapper" class="card bg-dark h-100">
 
           <!-- Row 1: Code Editor Controls -->
@@ -353,7 +353,7 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
       </div> <!-- /#left -->
 
       <!-- Right Side (Multi-Run Panels) -->
-      <div id="right" class="col-6" role="region" aria-label="Multi-Run Panels">
+      <div id="right" class="col-12 col-lg-6" role="region" aria-label="Multi-Run Panels">
         <div id="multi-run-panels">
 
           <!-- Add Version Button -->
@@ -419,6 +419,17 @@ echo 'Loaded Modules: ' . "\n - " . implode("\n - ", get_loaded_extensions()) . 
     crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Style (is the last to override)-->
   <link rel="stylesheet" type="text/css" href="assets/css/style.css">
+  <!-- Bootstrap JS: without it the navbar collapse cannot open (#bdNavbar), so
+       navigation is unreachable below the lg breakpoint.
+
+       Must come *before* the Monaco loader below. Monaco's AMD loader defines
+       define.amd, and this bundle is UMD, so it would register as an anonymous
+       AMD module instead of assigning window.bootstrap -- and an anonymous
+       define() that nothing requires is never executed, i.e. no Bootstrap at
+       all. CodeMirror is above it for the same reason. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.7/js/bootstrap.bundle.min.js"
+    integrity="sha512-Tc0i+vRogmX4NN7tuLbQfBxa8JkfUSAxSFVzmU31nVdHyiHElPPy2cWfFacmCJKw0VqovrzKhdd2TSTMdAxp2g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <!-- CodeMirror Editor & Mode -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
     integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="

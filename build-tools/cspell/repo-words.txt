@@ -27,6 +27,14 @@ vulcan
 # PHP internals
 EMBED
 EMSDK
+# The npm scope for Biome, and the (unrelated) package named "biome".
+biomejs
+# What that other package actually is: a .env file loader.
+dotenv
+# php-src checks sapi_module.name against these to decide where display_errors
+# output goes; the embed SAPI is not one of them, which is why diagnostics land
+# on stdout.
+phpdbg
 # Opcode family suffix: INIT_FCALL, DO_FCALL, INIT_DCALL, INIT_ICALL. cspell
 # splits on the underscore, so the suffix is the part that needs to be known.
 FCALL
@@ -58,6 +66,7 @@ buildx
 libphp
 libsqlite
 libversion
+longjmps
 mbstring
 simplexml
 strtoupper
@@ -85,6 +94,10 @@ insteadof
 intdiv
 linewise
 noopener
+# Playwright's page event, listened for by playground/tests/helpers.js.
+requestfailed
+# Playwright's file-chooser event, used by playground/tests/toolbar.spec.js.
+filechooser
 statuscode
 superglobal
 superglobals
