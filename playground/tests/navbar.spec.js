@@ -51,6 +51,8 @@ test.describe('navbar', () => {
         expect(wide.leftLinks.length).toBeGreaterThan(1)
         expect(wide.rightLinks.length).toBeGreaterThan(0)
         // Two groups, not one: the right-hand links are all after the left-hand ones.
+        // gap-3 on the collapse guarantees the separation; flex-grow only spreads slack,
+        // so a positive gap used to depend on the fallback font's width.
         expect(wide.gap).toBeGreaterThan(0)
         // ... and the right group is against the row's right edge, inset only by its
         // own margin.
