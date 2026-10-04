@@ -1,8 +1,25 @@
-# Issues for PHP-WASM Playground
+# PHP-WASM Playground
 
-## Backlog (Ideas)
+The PHP WASM Playground is a web-based environment for running PHP code in the browser using WebAssembly.
 
-- [ ] "Multi Version Run"
+## Features
+
+- Run PHP code directly in the browser without any server-side execution.
+- Support for multiple PHP versions via WebAssembly modules.
+- Syntax highlighting and error reporting in the code editor.
+- Ability to save and load code snippets.
+- Toggle between raw output and HTML output modes.
+- Continuous mode for live code execution as you type.
+- Single run mode for executing code on demand.
+- Reset functionality to clear the editor and start fresh.
+- Execution time display for executed code (wall clock; no memory or CPU split).
+- Example code snippets for quick testing and learning.
+
+## Issues for PHP-WASM Playground
+
+### Backlog (Ideas)
+
+- [x] "Multi Version Run"
   - Allow users to execute the same code against multiple PHP versions simultaneously.
   - Move the execution controls (e.g., Run button, PHP version selector) from the "Code Editor" panel into a dedicated "PHP" panel.
   - Enable users to add multiple PHP version rows (via a plus button), where each row provides its own "Run" button and PHP version selector.
@@ -49,7 +66,7 @@
   - using Monaco’s hover provider or similar?
 - [ ] Show more detailed performance metrics (e.g., memory usage)
 
-## Todo
+### Todo
 
 - [ ] find a save-format, which allows to save a multi-run scenario
    - aka save "differential run scenario"
@@ -59,17 +76,15 @@
 - [ ] add button "Format" next to run, which formats the code in a basic fashion
 - [ ] add "Performance" tab
   - for each version display: version, system time, user time, memory
-- [ ] provide "opcodes" tab to see the instruction in the PHP VM
-  - [ ] compile "vulcan logic dumper" php extension into the wasm module
-  - [ ] compiling seems uncomplicated, but activating the extension is not possible during runtime, because one can't set PHP_SYSTEM_INI directives. this needs to be done on the outside env.
-  so, i assume seems these INI settings have to be set and compiled into the php-wasm-bridge.c?
-  - [ ] or ship a php.ini with the wasm module and bake it in (together with other asset files)
-- [ ] allow usage of `declare(strict_types=1);` on the first line
+- [x] provide "opcodes" tab to see the instruction in the PHP VM
+  - [x] compile "vulcan logic dumper" php extension into the wasm module (ENABLE_VLD=1)
+  - resolved: vld.active=1 is set for the opcode dump, so no runtime INI juggling is needed
+- [x] allow usage of `declare(strict_types=1);` on the first line
   - `<?php declare(strict_types=1);` will trigger
   - `Fatal error: strict_types declaration must be the very first statement in the script in script on line 1`
-  - which implies that the php-wasm module adds an internal first line to the executed php content?
+  - cause found: the run path used to prepend `?>` to the code, so the declaration was no longer the first statement. The contents are staged as a real file now
 
-## Will-not-implement
+### Will-not-implement
 
 - [ ] multi-file support: Allow users to create and manage multiple PHP files/tabs in the playground? (won't implement)
 - [ ] URL sharing feature:
@@ -88,22 +103,22 @@
   - [ ] When the user clears the editor, add `<?php` automatically on line 1
   - [ ] **Solved**: Reset Button always inserts a working hello world example to start from
 
-## In-Progress
+### In-Progress
 
-- [ ] Extend Editor: Provide a "Multi-Run Editor" tab, which allows to run code using multiple PHP-WASM modules
+- [x] Extend Editor: Provide a "Multi-Run Editor" tab, which allows to run code using multiple PHP-WASM modules
 - [ ] Builder: compile multiple PHP-WASM modules
   - [ ] use PHP version as DOCKER argument
 - [ ] support only "Currently Supported Version" of PHP
   - https://www.php.net/supported-versions.php
   - grab this via json? or hardcode the matrix?
 
-## Features (Done)
+### Features (Done)
 
 - [x] CSS based on Bootstrap 5
 - [x] Editor Panel and Output Panel and Error Panel
 - [x] Support for multiple editors:
-  - [x] CodeMirror 5
-    - [ ] Syntax highlighting for PHP (is this even possible? wtf)
+  - [x] CodeMirror 6 (6.65.7, loaded from cdnjs)
+    - [x] Syntax highlighting for PHP — via the php mode (text/x-php)
   - [x] Monaco
     - [x] Syntax highlighting for PHP
 - [x] Toggle button for output mode (raw vs. HTML output, e.g., `phpinfo()`)
