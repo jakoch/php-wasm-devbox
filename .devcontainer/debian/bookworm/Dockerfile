@@ -6,7 +6,7 @@
 # This file is part of https://github.com/jakoch/php-wasm-devbox
 #
 
-FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS build-stage
+FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS build-stage
 
 # +-----------------------------+
 # | ARGS                        |
@@ -319,6 +319,6 @@ RUN set -e; \
 # The folder /php-wasm contains the compiled PHP-WASM module.
 #
 
-FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS deploy-stage
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS deploy-stage
 
 COPY --from=build-stage /php-wasm /php-wasm
