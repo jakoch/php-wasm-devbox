@@ -55,7 +55,7 @@ jobs:
               }
             }
 
-      - name: ✂ Remove 30 days old workflows runs
+      - name: ✂ Remove 14 days old workflows runs
         uses: actions/github-script@v9 # https://github.com/actions/github-script
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -241,9 +241,7 @@ jobs:
               if (response.data.workflow_runs.length === 0) break;
               if (response.data.workflow_runs.length > 0) {
                 for (const run of response.data.workflow_runs) {
-                  if (run.triggering_actor?.login === 'dependabot[bot]') {
                     runs_to_delete.push([run.id, run.name]);
-                  }
                 }
               }
               if (response.data.workflow_runs.length < 50) break;
@@ -294,9 +292,7 @@ jobs:
               if (response.data.workflow_runs.length === 0) break;
               if (response.data.workflow_runs.length > 0) {
                 for (const run of response.data.workflow_runs) {
-                  if (run.triggering_actor?.login === 'dependabot[bot]') {
                     runs_to_delete.push([run.id, run.name]);
-                  }
                 }
               }
               if (response.data.workflow_runs.length < 50) break;
