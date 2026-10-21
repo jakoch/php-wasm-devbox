@@ -86,7 +86,11 @@ class PHP {
         const { ccall, FS } = await createPhpModule(phpModuleOptions);
 
         // get the PHP version
-        this.#version = ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown";
+        // phpversion() returns "8.4.27-dev" for development builds; strip the
+        // suffix so the version matches the clean option values the page builds
+        // its dropdown from (e.g. "8.4.27"), and so the "#version === php_version"
+        // reload guard below can match.
+        this.#version = (ccall("phpw_exec", "string", ["string"], ["phpversion();"]) || "unknown").replace(/-dev$/, "");
 
         // Create the runPhp function that will execute the PHP code.
         // Staged as a real file and run with phpw(), not eval'd with a `?>`
