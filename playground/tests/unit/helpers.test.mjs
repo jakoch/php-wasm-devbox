@@ -56,17 +56,17 @@ describe('basePathFor', () => {
 
 describe('compareVersions', () => {
   it('sorts descending, which is the order the dropdown wants', () => {
-    const sorted = ['8.4.26', '8.5.11', '8.4.9', '8.10.0'].sort(compareVersions)
-    // 8.10.0 is newer than 8.5.11 and must come first; the two 8.4 patches keep
+    const sorted = ['8.4.27', '8.5.12', '8.4.9', '8.10.0'].sort(compareVersions)
+    // 8.10.0 is newer than 8.5.12 and must come first; the two 8.4 patches keep
     // their patch order.
-    assert.deepEqual(sorted, ['8.10.0', '8.5.11', '8.4.26', '8.4.9'])
+    assert.deepEqual(sorted, ['8.10.0', '8.5.12', '8.4.27', '8.4.9'])
   })
 
   it('is a comparator, not a boolean', () => {
     // loadPhpVersions() hands it straight to Array#sort, so a sign is required.
-    assert.ok(compareVersions('8.5.11', '8.4.26') < 0, 'newer first')
-    assert.ok(compareVersions('8.4.26', '8.5.11') > 0, 'older second')
-    assert.equal(compareVersions('8.5.11', '8.5.11'), 0)
+    assert.ok(compareVersions('8.5.12', '8.4.27') < 0, 'newer first')
+    assert.ok(compareVersions('8.4.27', '8.5.12') > 0, 'older second')
+    assert.equal(compareVersions('8.5.12', '8.5.12'), 0)
   })
 
   it('compares numerically, not as strings', () => {
@@ -86,7 +86,7 @@ describe('compareVersions', () => {
     // Number('dev') is NaN and `NaN || 0` is 0, so an unparsable version
     // collapses to 0.0 instead of poisoning the sort with NaN comparisons.
     assert.equal(compareVersions('dev', '0.0.0'), 0)
-    assert.ok(compareVersions('8.5.11', '8.5.x-dev') < 0)
+    assert.ok(compareVersions('8.5.12', '8.5.x-dev') < 0)
   })
 })
 

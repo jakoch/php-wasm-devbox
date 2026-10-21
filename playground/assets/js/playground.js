@@ -191,7 +191,7 @@ class PHP {
      * only need the module's presence should await this instead of triggering a
      * run. Returns the module namespace.
      *
-     * @param {string} php_version  e.g. "8.5.11"
+     * @param {string} php_version  e.g. "8.5.12"
      * @returns {Promise<object>}   The module namespace
      */
     async loadModule(php_version) {
@@ -1518,7 +1518,7 @@ if (typeof document !== 'undefined') {
     /**
      * The last version a run actually succeeded on.
      *
-     * Not php.version: that is phpversion(), which comes back as "8.4.26-dev"
+     * Not php.version: that is phpversion(), which comes back as "8.4.27-dev"
      * for a development build and so does not match any option value. This is
      * the dropdown's own vocabulary.
      */

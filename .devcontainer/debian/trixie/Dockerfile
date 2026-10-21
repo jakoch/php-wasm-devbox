@@ -12,7 +12,7 @@ FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d
 # | ARGS                        |
 # +-----------------------------+
 
-ARG PHP_VERSION=8.5.11
+ARG PHP_VERSION=8.5.12
 ARG ONIGURUMA_VERSION=6.9.10
 ARG LIBXML_VERSION=2.15.4
 ARG VLD_VERSION=0.19.1

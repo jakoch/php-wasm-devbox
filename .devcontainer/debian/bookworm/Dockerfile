@@ -12,7 +12,7 @@ FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595
 # | ARGS                        |
 # +-----------------------------+
 
-ARG PHP_VERSION=8.5.11
+ARG PHP_VERSION=8.5.12
 ARG ONIGURUMA_VERSION=6.9.10
 ARG LIBXML_VERSION=2.15.4
 ARG VLD_VERSION=0.19.1

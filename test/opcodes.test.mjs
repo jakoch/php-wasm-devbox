@@ -11,7 +11,7 @@
  *
  * The module version is picked from playground/assets/wasm/php-versions.json,
  * preferring the highest, and can be overridden:
- *   PHP_WASM_VERSION=8.5.11 node test/opcodes.test.mjs
+ *   PHP_WASM_VERSION=8.5.12 node test/opcodes.test.mjs
  */
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
