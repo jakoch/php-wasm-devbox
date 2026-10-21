@@ -1,0 +1,396 @@
+:root {
+    --bs-gray-900: #212529;
+    --bs-gray-800: #343a40;
+    --bs-white: #fff;
+    --bs-light: #f8f9fa;
+}
+
+/* Error marker for CodeMirror PHP errors */
+.php-error-marker {
+  text-decoration: underline wavy red;
+  text-decoration-thickness: 1px;
+}
+
+.navbar {
+    position: relative;
+    background-color: var(--bs-gray-900);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.6);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, #4F5B93, #8892BF);
+    opacity: 0.4;
+}
+
+/* link styles */
+.nav-link {
+    color: var(--bs-light);
+    transition: all 0.3s ease-in-out;
+}
+
+/* update text color on hover */
+.nav-link:hover,
+.nav-link:active {
+    color: #8892BF;
+}
+
+#bootstrap-body-override {
+    background-color: var(--bs-gray-800);
+    color: var(--bs-white);
+}
+
+#editor {
+    flex: none;
+    resize: none;
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.9em;
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+    max-height: 400px;
+    border: 1px solid #444;
+    background-color: #2d2d2d;
+    color: #ffffff;
+    text-align: left;
+}
+
+#php-version-display {
+    min-width: 150px;
+}
+
+#performance-display {
+    min-width: 150px;
+}
+
+.CodeMirror {
+    height: 300px;
+    border: 1px solid #444;
+    text-align: left;
+}
+
+#output {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 1em;
+    background-color: #333;
+    color: #ffffff;
+    text-align: left;
+    white-space: pre-wrap;
+}
+
+.resizable-content {
+    min-height: 250px;
+    min-width: 100%;
+    resize: both;
+    overflow: auto;
+    max-height: fit-content;
+    max-width: fit-content;
+  }
+
+#editor-statusbar {
+    background-color: #23272b;
+    color: #fff;
+    border-top: 1px solid #444;
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.95em;
+    min-height: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+    min-width: 100%;
+    box-sizing: border-box;
+}
+
+#auto-run-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #28a745;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+}
+
+.run-flash {
+    background: #ffc107 !important;
+    color: #212529 !important;
+    box-shadow: 0 0 8px 2px #ffc107;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+#footer {
+    position: relative;
+    width: 100%;
+    margin-top: 2rem;
+    clear: both;
+}
+
+html, body, #main-container {
+  min-height: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#main-container {
+  flex: 1 0 auto;
+}
+
+footer {
+  background: #23272b;
+  color: #adb5bd;
+  padding: 1rem 0;
+}
+
+#left.col-6, #editor-wrapper.card {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#editor-body.card-body {
+  height: 400px;
+  display: block;
+  min-height: 0;
+  max-height: none;
+}
+
+/* PHP Docs Panel Header Gradient - Official PHP Blue */
+#docs-panel-header {
+    background: linear-gradient(90deg, #4F5B93 0%, #8892BF 100%); /* PHP blue gradient */
+    color: #fff;
+    border-bottom: 2px solid #4F5B93;
+}
+
+/* Accessibility: visible focus indicator for all interactive elements */
+.focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #ffbf47 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ffbf47;
+  z-index: 2;
+}
+
+.visually-hidden-focusable {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.visually-hidden-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  left: auto;
+  background: #222;
+  color: #fff;
+  padding: 0.5em 1em;
+  z-index: 1000;
+}
+
+/* Prevent layout shift for status bar, dropdowns, and switches */
+#editor-statusbar {
+    min-width: 100%;
+    min-height: 32px;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+#php-example-switcher {
+    min-width: 180px;
+    width: 180px !important;
+    box-sizing: border-box;
+}
+
+.form-check.form-switch {
+    min-width: 120px;
+    box-sizing: border-box;
+}
+
+.form-check-input[type="checkbox"] {
+    min-width: 2.5em;
+    min-height: 1.5em;
+}
+
+/* Avoid late icon/font causing shift */
+#editor-statusbar button, #editor-statusbar span, #editor-statusbar {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+}
+
+/* ------------------------------------------------------------------ */
+/* Result tabs (Output / Errors / Opcodes)                             */
+/* ------------------------------------------------------------------ */
+
+/* Bootstrap's own tab styling assumes a light nav-tabs background; on the dark
+   card header the inactive tabs disappear without this. */
+#result-tabs .nav-link {
+    color: var(--bs-light);
+    background-color: transparent;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+}
+
+#result-tabs .nav-link:hover,
+#result-tabs .nav-link:focus-visible {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(255, 255, 255, 0.35);
+}
+
+#result-tabs .nav-link.active {
+    color: #fff;
+    background-color: transparent;
+    border-bottom-color: #ffbf47;
+}
+
+/* ------------------------------------------------------------------ */
+/* Opcode dump presentation                                            */
+/* ------------------------------------------------------------------ */
+
+#opcode-output {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.85em;
+    line-height: 1.35;
+    /* The dump is a fixed-width table; wrapping it destroys the columns. */
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+    background-color: #0b0b0b;
+}
+
+#opcode-output .opc-name {
+    color: #7fd1ff;
+    font-weight: 600;
+}
+
+#opcode-output .opc-jump {
+    color: #ff9f5a;
+}
+
+#opcode-output .opc-slot {
+    color: #b9e88a;
+}
+
+#opcode-output .opc-string {
+    color: #f7c873;
+}
+
+#opcode-output .opc-mark {
+    color: #ff6b6b;
+    font-weight: 700;
+}
+
+#opcode-output .opc-meta {
+    color: #9aa4b2;
+    font-style: italic;
+}
+
+/* The ruler and the per-op_array header block VLD emits before each listing. */
+#opcode-output .opc-rule {
+    color: #6c757d;
+}
+
+#opcode-status {
+    font-family: 'Jetbrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.85em;
+}
+
+/* Widened result panel. The opcode listing is 89 columns (~641px monospace)
+   against ~568px in a half-width column, so it always overflows without this.
+   `display: none` on the editor cannot be transitioned and leaves Monaco at zero
+   width, so playground.js calls editor.layout() on restore. */
+#right {
+    transition: flex-basis 0.22s ease, width 0.22s ease;
+}
+
+#editor-container.widened #left {
+    display: none;
+}
+
+#editor-container.widened #right {
+    flex: 0 0 100%;
+    width: 100%;
+    animation: opc-widen-in 0.22s ease;
+}
+
+@keyframes opc-widen-in {
+    from {
+        opacity: 0.35;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Sticky ruler. The dump is fixed-width text, not a table, so there is no
+   <thead> to pin; the ruler line is its own element instead. It needs an opaque
+   background or listing rows show through as they scroll under it. */
+#opcode-output {
+    overflow: auto;
+    max-height: 60vh;
+    /* Required, not decorative: this container is a <div>, and its children only
+       inherit `white-space` from it. Without this the fixed-width columns
+       collapse and the listing is unreadable. */
+    white-space: pre;
+}
+
+#opcode-ruler {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    /* Opaque, and matched to the card, not to --bs-body-bg: this panel is dark
+       and the token would resolve to the wrong colour here. */
+    background: #212529;
+    font-family: inherit;
+    white-space: pre;
+    padding-bottom: 0.15rem;
+    border-bottom: 1px solid #495057;
+    margin-bottom: 0.15rem;
+    color: #dee2e6;
+}
+
+/* Diagnostic severity. Colour tracks the worst severity present, so one
+   deprecation no longer paints the badge the same red as a fatal. */
+#standard-error-output .sev-fatal {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+#standard-error-output .sev-warning {
+    color: #ffc75a;
+}
+
+#standard-error-output .sev-notice {
+    color: #8ed8f5;
+}
+
+#standard-error-output .sev-deprecated {
+    color: #9aa4b2;
+    font-style: italic;
+}
+
+#output-alert-banner {
+    font-size: 0.9em;
+}
